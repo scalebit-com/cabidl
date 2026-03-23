@@ -1,0 +1,23 @@
+name: cabidl
+version: "1.0.0"
+about: Parse and validate CABIDL architecture specification files
+args:
+  - file:
+      help: Path to the CABIDL markdown file
+      required: true
+      index: 1
+subcommands:
+  - read:
+      about: Resolve includes and output a single unified CABIDL document
+      args:
+        - file:
+            help: Path to the CABIDL markdown file
+            required: true
+            index: 1
+  - validate:
+      about: Validate a CABIDL document (silent on success, errors on failure)
+      args:
+        - file:
+            help: Path to the CABIDL markdown file
+            required: true
+            index: 1
