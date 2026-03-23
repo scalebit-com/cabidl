@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cabidl.dev/schemas/cabidl-boundary.schema.json",
+  "title": "CABIDL Boundary Block",
+  "description": "Defines an architectural boundary — an interface or contract between components. The specification property points to the formal definition of the boundary.",
+  "type": "object",
+  "required": ["kind", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "boundary",
+      "description": "Block type identifier."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of the boundary."
+    },
+    "exposure": {
+      "type": "string",
+      "enum": ["external", "internal"],
+      "description": "Whether this boundary is external (user/world-facing, e.g. CLI, REST API) or internal (component-to-component contract)."
+    },
+    "specification": {
+      "type": "object",
+      "description": "Pointer to the formal specification that defines this boundary.",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative path to the file or directory containing the specification."
+        },
+        "typeDescription": {
+          "type": "string",
+          "description": "A human/AI-readable description of the specification type (e.g. \"OpenAPI Schema\", \"CLAP YAML\", \"Rust Traits\", \"gRPC Proto\")."
+        }
+      }
+    }
+  }
+}

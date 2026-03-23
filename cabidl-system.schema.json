@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cabidl.dev/schemas/cabidl-system.schema.json",
+  "title": "CABIDL System Block",
+  "description": "Defines the top-level system identity in a CABIDL document. The system description is provided in the markdown prose following the YAML block.",
+  "type": "object",
+  "required": ["kind", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "system",
+      "description": "Block type identifier."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name of the system."
+    }
+  }
+}
