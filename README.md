@@ -9,93 +9,109 @@ Component Architecture Boundary and Interface Definition Language
 
 CABIDL is a textual software architecture language that describes a system in terms of:
 
-- **Components** — the fundamental building blocks of your software
-- **Interfaces** — what each component provides or requires
-- **Boundaries** — the separation between your system and the outside world
-- **Implementation assignment** — the realization or mapping of components
-- **Relationships and connections** — how components interact and fit together
-- **The overall architecture** — captured in a single, readable source file
+- **Components** — the building blocks of your software, what they provide and require
+- **Boundaries** — the interfaces and contracts between components, both internal and external
+- **Relationships** — how components connect through shared boundaries
 
-The purpose of CABIDL is to offer a **single location** where the entire software architecture is described **clearly and explicitly**. Instead of relying on disconnected diagrams, wikis, conventions, and tribal knowledge, CABIDL provides a single textual representation of the system’s structure and points of access.
+Everything lives in a single Markdown file (`cabidl.md`) with embedded YAML blocks — human-readable, machine-parseable, and AI-friendly.
 
-A CABIDL file typically answers:
+A CABIDL file answers:
 
 - What are the major components in this system?
-- What does each component expose?
-- What dependencies does each component have?
-- Which interfaces are internal and which are externally accessible?
-- What are the external entry points or boundary surfaces?
-- How are components wired together?
-- What implementation backs a given component?
-- What’s inside the system boundary, and what’s outside?
+- What boundaries exist between them?
+- Which boundaries are external (user-facing) and which are internal?
+- What does each component provide and depend on?
+- What technology backs each component?
+- Where is the formal specification for each boundary contract?
 
-CABIDL is **not just an interface language and not just a deployment language**. It’s an architecture definition language focused on **components, boundaries, interfaces, and composition**.
+> **In short:**
+> CABIDL is architecture-as-code. Write your system's structure in a markdown file, and it becomes a single source of truth that humans, tools, and AI can all read.
 
-> **Concise definition:**  
-> CABIDL is a textual language for defining software components, their interfaces, implementations, boundaries, and relationships in a single architecture specification.
+---
+
+# The Format
+
+A CABIDL document is a Markdown file with three types of YAML blocks:
+
+```yaml
+kind: system
+name: my-system
+```
+
+```yaml
+kind: boundary
+name: Api
+exposure: external
+specification:
+  path: ./openapi.yaml
+  typeDescription: OpenAPI Schema
+```
+
+```yaml
+kind: component
+name: Server
+technology: Rust
+boundaries:
+  provides:
+    - Api
+  requires:
+    - Database
+```
+
+Sections are separated by `---`. Markdown prose between blocks provides context and rationale. Boundary `specification` fields point to formal contract definitions (OpenAPI schemas, Rust traits, gRPC protos, etc.).
+
+Documents can be split across files using `<!-- @include ./path.md -->` directives.
+
+The full format is defined in [specification.md](specification.md).
+
+---
+
+# Why CABIDL?
+
+**Architecture as a first-class artifact.** Instead of relying on disconnected diagrams, wikis, and tribal knowledge, CABIDL provides a single textual representation that lives in version control alongside your code.
+
+**AI-friendly by design.** The format is designed to be consumed and interpreted by AI. An AI can read a `cabidl.md`, understand the full system architecture, and implement or restructure a codebase from it. Free-form fields like `typeDescription` allow natural language descriptions that both humans and AI understand.
+
+**Tooling-ready.** The structured YAML blocks enable validation, diagram generation, dependency analysis, and conformance checks. The `cabidl` CLI tool validates documents and resolves includes.
 
 ---
 
 # When to Use CABIDL
 
-**Use CABIDL when you need your system’s architecture to be:**
-- Explicit
-- Reviewable
-- Maintainable as code
+CABIDL is valuable when:
 
-CABIDL is especially valuable when informal diagrams and scattered documentation are no longer sufficient.
+- **Your system has multiple components** — services, modules, adapters, APIs — that interact in nontrivial ways
+- **Interfaces matter** — you need exact contracts between components
+- **Boundaries matter** — external APIs, trusted boundaries, third-party integration zones
+- **Architecture should live in version control** — diffable, reviewable, alongside code
+- **A shared source of truth is required** — for multi-team environments
+- **You want to generate artifacts** — diagrams, dependency maps, validation, scaffolding
 
-**Scenarios where CABIDL is a great fit:**
-
-- **Your system has multiple components**:  
-  If your software includes services, modules, subsystems, adapters, gateways, workers, APIs, or processors that interact in nontrivial ways, CABIDL describes how these parts fit together.
-- **Interfaces matter**:  
-  When you need to define exactly what a component provides and consumes, especially where interface contracts drive system integrity.
-- **Boundaries matter**:  
-  When you need to spell out external APIs, ingress/egress points, trusted boundaries, or integration zones with third parties—CABIDL excels.
-- **Architecture should live in version control**:  
-  CABIDL files are easy to diff, review, store alongside code, validate, and use as input to tooling.
-- **A shared architectural source of truth is required**:  
-  For multi-team or multi-developer environments, CABIDL removes ambiguity about structure, ownership, and exposure.
-- **You want to generate artifacts from architecture**:  
-  CABIDL definitions can enable generation of architecture diagrams, interface inventories, dependency maps, documentation, validation rules, scaffolding, or conformance checks.
-
----
-
-# Where CABIDL Shines
-
-CABIDL is particularly strong for:
-
-- Service-oriented systems
-- Modular monoliths
-- Microservice platforms
-- Plugin-based applications
-- Distributed systems
-- Systems requiring strict API or boundary governance
-- Environments needing architectural review and traceability
-
-It fills a practical middle ground between very informal docs and heavyweight modeling frameworks.
+CABIDL is particularly strong for service-oriented systems, modular monoliths, microservice platforms, plugin architectures, and systems requiring strict boundary governance.
 
 ---
 
 # When Not to Use CABIDL
 
-CABIDL may not be necessary if your system is **small, short-lived, or structurally trivial** (e.g., a single script or simple app). If explicit architectural boundaries are absent, CABIDL may add more overhead than benefit.
-
-It is **not a replacement for**:
-
-- Detailed code or implementation
-- Protocol schemas
-- Deployment manifests
-- Runtime observability
-- Low-level documentation
-
-CABIDL’s purpose is to define architecture, not to cover all engineering details.
+CABIDL may not be necessary if your system is small, short-lived, or structurally trivial. It is not a replacement for detailed code, protocol schemas, deployment manifests, or runtime observability. Its purpose is to define architecture, not to cover all engineering details.
 
 ---
 
-# CABIDL in a Nutshell
+# The cabidl CLI
 
-> CABIDL is a textual architecture definition language for describing software systems as components with explicit interfaces, boundaries, implementations, and relationships. Use it when your system structure must be defined clearly in a single file and maintained as a source-controlled artifact.
+The `cabidl` command-line tool works with CABIDL documents:
+
+```
+cabidl validate cabidl.md    # Validate structure and references (silent on success)
+cabidl read cabidl.md        # Resolve includes, output unified document
+```
+
+The tool validates YAML block structure, boundary reference integrity, name uniqueness, and reports errors with file and line number context. See [cabidl-cli/](cabidl-cli/) for the implementation.
 
 ---
+
+# Learn More
+
+- [specification.md](specification.md) — The full CABIDL format specification
+- [cabidl-cli/cabidl/cabidl.md](cabidl-cli/cabidl/cabidl.md) — The `cabidl` CLI tool's own architecture, written in CABIDL
+- [examples/simple-ls/cabidl.md](examples/simple-ls/cabidl.md) — A minimal example describing a simple `ls` command

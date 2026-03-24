@@ -21,6 +21,30 @@ pub fn validate(doc: &CabidlDocument, file: &str) -> Vec<ValidationError> {
         }
     }
 
+    // Validate boundary name uniqueness
+    let mut seen_boundaries: HashSet<&str> = HashSet::new();
+    for boundary in &doc.boundaries {
+        if !seen_boundaries.insert(&boundary.name) {
+            errors.push(ValidationError {
+                message: format!("Duplicate boundary name '{}'", boundary.name),
+                file: file.to_string(),
+                line: boundary.line,
+            });
+        }
+    }
+
+    // Validate component name uniqueness
+    let mut seen_components: HashSet<&str> = HashSet::new();
+    for component in &doc.components {
+        if !seen_components.insert(&component.name) {
+            errors.push(ValidationError {
+                message: format!("Duplicate component name '{}'", component.name),
+                file: file.to_string(),
+                line: component.line,
+            });
+        }
+    }
+
     // Validate boundary reference integrity
     let defined_boundaries: HashSet<&str> = doc.boundaries.iter().map(|b| b.name.as_str()).collect();
 

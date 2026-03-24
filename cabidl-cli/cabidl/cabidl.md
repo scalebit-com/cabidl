@@ -1,7 +1,7 @@
 # cabidl
 
 **CABIDL Specification**
-Version: 1.0
+Version: 2.0
 
 ```yaml
 kind: system
@@ -9,6 +9,27 @@ name: cabidl
 ```
 
 A command-line tool for working with CABIDL architecture specification files. It reads CABIDL markdown documents, resolves `<!-- @include -->` directives into a single unified output, and validates that all YAML blocks conform to the CABIDL schemas and that boundary references between components are consistent.
+
+The system is implemented as a Rust Cargo workspace. Each boundary is its own crate containing trait definitions and types. Each component is its own crate containing the implementation. Workspace dependencies mirror the `provides`/`requires` relationships.
+
+### Project Structure
+
+```
+cabidl-cli/
+├── Cargo.toml                          # Workspace root
+├── cabidl/                             # This CABIDL specification
+│   ├── cabidl.md
+│   ├── clap.yaml
+│   ├── filesystem_trait.rs
+│   └── parser_trait.rs
+├── filesystem/                         # Filesystem boundary (cabidl-filesystem)
+├── parser/                             # CabidlParser boundary (cabidl-parser)
+├── filesystem-impl/                    # FilesystemImpl component (cabidl-filesystem-impl)
+├── parser-impl/                        # Parser component (cabidl-parser-impl)
+├── cli/                                # Cli component (cabidl binary)
+└── tests/
+    └── validation_tests.rs
+```
 
 ---
 
@@ -23,10 +44,10 @@ specification:
   typeDescription: CLAP YAML
 ```
 
-The command-line interface exposed to the user. The `clap.yaml` is a declarative specification of the CLI contract, not a runtime configuration file. The CLI has two subcommands:
+The command-line interface exposed to the user. Defined by `clap.yaml` and implemented directly inside the Cli component crate using clap's derive API. Two subcommands:
 
-- **read** — Takes a CABIDL markdown file as input, resolves all `<!-- @include -->` directives recursively, and writes a single unified CABIDL document to stdout.
-- **validate** — Takes a CABIDL markdown file as input, validates the document structure, YAML blocks, and boundary reference integrity. Produces no output on success; exits with a non-zero status and error messages on failure.
+- **read** — Resolves all `<!-- @include -->` directives and writes a single unified CABIDL document to stdout.
+- **validate** — Validates document structure, YAML blocks, and boundary reference integrity. Silent on success; errors to stderr with non-zero exit on failure.
 
 ---
 
@@ -41,7 +62,9 @@ specification:
   typeDescription: Rust Traits
 ```
 
-Abstraction over filesystem operations. The parser never reads files directly — it goes through this boundary so that the parsing logic can be tested with in-memory file systems and does not depend on real I/O.
+Abstraction over filesystem operations so that the parser can be tested with in-memory file systems without real I/O. The trait contract is defined in `./filesystem_trait.rs`.
+
+Implemented as the `cabidl-filesystem` crate in `filesystem/`. Contains only the trait — no implementations, no external dependencies.
 
 ---
 
@@ -56,7 +79,9 @@ specification:
   typeDescription: Rust Traits
 ```
 
-The core parsing and validation contract. Provides the ability to parse a CABIDL markdown document into a structured representation, resolve include directives, and validate that all YAML blocks and cross-references are correct. The CLI component depends on this boundary to perform all meaningful work.
+The core parsing and validation contract. The trait and all domain types are defined in `./parser_trait.rs`.
+
+Implemented as the `cabidl-parser` crate in `parser/`. Contains the `CabidlParser` trait, all domain types (`CabidlDocument`, `SystemBlock`, `BoundaryBlock`, `ComponentBlock`, `ValidationError`), and no external dependencies. Each type lives in its own module file.
 
 ---
 
@@ -73,7 +98,9 @@ boundaries:
     - CabidlParser
 ```
 
-The entry point of the application. Parses command-line arguments using clap, dispatches to the appropriate subcommand handler, and formats output or errors for the terminal. It delegates all parsing and validation logic to the CabidlParser boundary — the CLI component itself contains no domain logic.
+Entry point of the application. Parses command-line arguments, dispatches to the appropriate subcommand, and formats output or errors for the terminal. Contains no domain logic — delegates all parsing and validation to the CabidlParser boundary.
+
+Implemented as the `cabidl` binary crate in `cli/`. Depends on `cabidl-parser`, `cabidl-parser-impl`, `cabidl-filesystem-impl`, and `clap`.
 
 ---
 
@@ -90,14 +117,15 @@ boundaries:
     - Filesystem
 ```
 
-Implements the CABIDL parsing and validation logic. Responsibilities:
+Implements all CABIDL parsing and validation logic:
 
-- Parse markdown into sections delimited by `---`
-- Extract and parse YAML code blocks from each section
-- Resolve `<!-- @include path -->` directives recursively, detecting circular includes
-- Validate each YAML block against the appropriate schema (system, boundary, component) based on the `kind` field
-- Validate that all boundary names referenced in component `boundaries.provides` and `boundaries.requires` have a corresponding boundary definition
-- Report structured errors with file path and line number context
+- Resolves `<!-- @include -->` directives recursively with circular include detection
+- Extracts YAML blocks from markdown, tracking line numbers for error reporting
+- Provides a pure `parse_content()` function that takes a fully-resolved CABIDL string and returns a structured document — this is the primary entry point for testing
+- Validates YAML block structure, name uniqueness, boundary reference integrity, and exposure values
+- Reports errors in compiler-style `file:line: message` format
+
+Implemented as the `cabidl-parser-impl` crate in `parser-impl/`. Depends on `cabidl-parser`, `cabidl-filesystem`, `serde`, `serde_yaml`, and `regex`.
 
 ---
 
@@ -112,7 +140,9 @@ boundaries:
     - Filesystem
 ```
 
-Implements the Filesystem boundary using the Rust standard library (`std::fs`). Reads file contents as UTF-8 strings and resolves relative paths against the directory of the file that contains the include directive.
+Implements the Filesystem boundary. Provides a real implementation using `std::fs` and an in-memory implementation for testing.
+
+Implemented as the `cabidl-filesystem-impl` crate in `filesystem-impl/`. Depends on `cabidl-filesystem`.
 
 ---
 

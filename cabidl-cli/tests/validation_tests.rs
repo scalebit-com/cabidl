@@ -366,6 +366,92 @@ name: Standalone
 }
 
 // ---------------------------------------------------------------------------
+// Uniqueness tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_duplicate_boundary_names() {
+    let content = "\
+```yaml
+kind: system
+name: test
+```
+
+---
+
+```yaml
+kind: boundary
+name: Api
+```
+
+---
+
+```yaml
+kind: boundary
+name: Api
+```
+";
+    let errors = parse_and_validate(content);
+    assert!(errors.iter().any(|e| e.message.contains("Duplicate boundary name 'Api'")));
+}
+
+#[test]
+fn test_duplicate_component_names() {
+    let content = "\
+```yaml
+kind: system
+name: test
+```
+
+---
+
+```yaml
+kind: component
+name: Server
+```
+
+---
+
+```yaml
+kind: component
+name: Server
+```
+";
+    let errors = parse_and_validate(content);
+    assert!(errors.iter().any(|e| e.message.contains("Duplicate component name 'Server'")));
+}
+
+#[test]
+fn test_unique_names_across_types_is_valid() {
+    // Same name on a boundary and component is fine — they are different types
+    let content = "\
+```yaml
+kind: system
+name: test
+```
+
+---
+
+```yaml
+kind: boundary
+name: Storage
+```
+
+---
+
+```yaml
+kind: component
+name: Storage
+boundaries:
+  provides:
+    - Storage
+```
+";
+    let errors = parse_and_validate(content);
+    assert!(errors.is_empty());
+}
+
+// ---------------------------------------------------------------------------
 // Component reference integrity tests
 // ---------------------------------------------------------------------------
 
