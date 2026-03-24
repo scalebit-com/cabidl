@@ -2,7 +2,9 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::process;
 
-use cabidl::{filesystem, parser, validator};
+use cabidl_parser::CabidlParser;
+use cabidl_parser_impl::CabidlParserImpl;
+use cabidl_filesystem_impl::RealFilesystem;
 
 #[derive(Parser)]
 #[command(name = "cabidl", version = "1.0.0")]
@@ -28,11 +30,11 @@ enum Commands {
 
 fn main() {
     let cli = Cli::parse();
-    let fs = filesystem::RealFilesystem;
+    let parser = CabidlParserImpl::new(Box::new(RealFilesystem));
 
     match cli.command {
         Commands::Read { file } => {
-            match parser::resolve(&fs, &file) {
+            match cabidl_parser_impl::resolve(&RealFilesystem, &file) {
                 Ok(content) => print!("{}", content),
                 Err(errors) => {
                     for e in &errors {
@@ -43,9 +45,9 @@ fn main() {
             }
         }
         Commands::Validate { file } => {
-            match parser::parse(&fs, &file) {
-                Ok(doc) => {
-                    let errors = validator::validate(&doc, &file.display().to_string());
+            match parser.parse(&file) {
+                Ok(system) => {
+                    let errors = parser.validate(&system, &file.display().to_string());
                     if errors.is_empty() {
                         process::exit(0);
                     } else {

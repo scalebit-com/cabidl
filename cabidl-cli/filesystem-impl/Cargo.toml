@@ -1,0 +1,7 @@
+[package]
+name = "cabidl-filesystem-impl"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+cabidl-filesystem = { path = "../filesystem" }

@@ -1,0 +1,14 @@
+[package]
+name = "cabidl"
+version = "1.0.0"
+edition = "2024"
+
+[[bin]]
+name = "cabidl"
+path = "src/main.rs"
+
+[dependencies]
+cabidl-parser = { path = "../parser" }
+cabidl-parser-impl = { path = "../parser-impl" }
+cabidl-filesystem-impl = { path = "../filesystem-impl" }
+clap = { version = "4", features = ["derive"] }

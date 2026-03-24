@@ -65,7 +65,34 @@ dependencies = [
 name = "cabidl"
 version = "1.0.0"
 dependencies = [
+ "cabidl-filesystem-impl",
+ "cabidl-parser",
+ "cabidl-parser-impl",
  "clap",
+]
+
+[[package]]
+name = "cabidl-filesystem"
+version = "1.0.0"
+
+[[package]]
+name = "cabidl-filesystem-impl"
+version = "1.0.0"
+dependencies = [
+ "cabidl-filesystem",
+]
+
+[[package]]
+name = "cabidl-parser"
+version = "1.0.0"
+
+[[package]]
+name = "cabidl-parser-impl"
+version = "1.0.0"
+dependencies = [
+ "cabidl-filesystem",
+ "cabidl-filesystem-impl",
+ "cabidl-parser",
  "regex",
  "serde",
  "serde_yaml",

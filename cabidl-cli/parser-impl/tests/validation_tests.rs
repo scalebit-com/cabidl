@@ -1,14 +1,13 @@
-use cabidl::filesystem::InMemoryFilesystem;
-use cabidl::parser::{parse, parse_content, resolve};
-use cabidl::types::ValidationError;
-use cabidl::validator::validate;
+use cabidl_filesystem_impl::InMemoryFilesystem;
+use cabidl_parser::{System, ValidationError};
+use cabidl_parser_impl::{parse, parse_content, resolve, validate};
 use std::path::Path;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-fn parse_ok(content: &str) -> cabidl::types::CabidlDocument {
+fn parse_ok(content: &str) -> System {
     parse_content(content, "test.md").expect("expected successful parse")
 }
 
@@ -17,8 +16,8 @@ fn parse_err(content: &str) -> Vec<ValidationError> {
 }
 
 fn parse_and_validate(content: &str) -> Vec<ValidationError> {
-    let doc = parse_ok(content);
-    validate(&doc, "test.md")
+    let system = parse_ok(content);
+    validate(&system, "test.md")
 }
 
 // ---------------------------------------------------------------------------
@@ -79,10 +78,10 @@ kind: system
 name: minimal
 ```
 ";
-    let doc = parse_ok(content);
-    assert_eq!(doc.system.name, "minimal");
-    assert!(doc.boundaries.is_empty());
-    assert!(doc.components.is_empty());
+    let system = parse_ok(content);
+    assert_eq!(system.name, "minimal");
+    assert!(system.boundaries.is_empty());
+    assert!(system.components.is_empty());
 }
 
 #[test]
@@ -120,15 +119,15 @@ boundaries:
     - Api
 ```
 ";
-    let doc = parse_ok(content);
-    assert_eq!(doc.system.name, "my-system");
-    assert_eq!(doc.boundaries.len(), 1);
-    assert_eq!(doc.boundaries[0].name, "Api");
-    assert_eq!(doc.components.len(), 1);
-    assert_eq!(doc.components[0].name, "Server");
+    let system = parse_ok(content);
+    assert_eq!(system.name, "my-system");
+    assert_eq!(system.boundaries.len(), 1);
+    assert_eq!(system.boundaries[0].name, "Api");
+    assert_eq!(system.components.len(), 1);
+    assert_eq!(system.components[0].name, "Server");
 
     // Validate should pass too
-    let errors = validate(&doc, "test.md");
+    let errors = validate(&system, "test.md");
     assert!(errors.is_empty(), "expected no validation errors, got: {:?}", errors);
 }
 
@@ -247,9 +246,9 @@ kind: boundary
 name: ShouldBeIgnored
 ```
 ";
-    let doc = parse_ok(content);
-    assert_eq!(doc.system.name, "test");
-    assert!(doc.boundaries.is_empty());
+    let system = parse_ok(content);
+    assert_eq!(system.name, "test");
+    assert!(system.boundaries.is_empty());
 }
 
 // ---------------------------------------------------------------------------
@@ -391,7 +390,8 @@ kind: boundary
 name: Api
 ```
 ";
-    let errors = parse_and_validate(content);
+    // Duplicate boundary names are now caught at parse time
+    let errors = parse_err(content);
     assert!(errors.iter().any(|e| e.message.contains("Duplicate boundary name 'Api'")));
 }
 
@@ -417,7 +417,8 @@ kind: component
 name: Server
 ```
 ";
-    let errors = parse_and_validate(content);
+    let system = parse_ok(content);
+    let errors = validate(&system, "test.md");
     assert!(errors.iter().any(|e| e.message.contains("Duplicate component name 'Server'")));
 }
 
@@ -452,7 +453,7 @@ boundaries:
 }
 
 // ---------------------------------------------------------------------------
-// Component reference integrity tests
+// Component reference integrity tests (now parse-time errors)
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -473,7 +474,7 @@ boundaries:
     - NonExistent
 ```
 ";
-    let errors = parse_and_validate(content);
+    let errors = parse_err(content);
     assert_eq!(errors.len(), 1);
     assert!(errors[0].message.contains("provides undefined boundary 'NonExistent'"));
     assert!(errors[0].message.contains("Component 'Server'"));
@@ -497,7 +498,7 @@ boundaries:
     - MissingDep
 ```
 ";
-    let errors = parse_and_validate(content);
+    let errors = parse_err(content);
     assert_eq!(errors.len(), 1);
     assert!(errors[0].message.contains("requires undefined boundary 'MissingDep'"));
     assert!(errors[0].message.contains("Component 'Client'"));
@@ -751,12 +752,12 @@ boundaries:
     - Storage
 ```");
 
-    let doc = parse(&fs, Path::new("/project/main.md")).unwrap();
-    assert_eq!(doc.system.name, "test-system");
-    assert_eq!(doc.boundaries.len(), 2);
-    assert_eq!(doc.components.len(), 2);
+    let system = parse(&fs, Path::new("/project/main.md")).unwrap();
+    assert_eq!(system.name, "test-system");
+    assert_eq!(system.boundaries.len(), 2);
+    assert_eq!(system.components.len(), 2);
 
-    let errors = validate(&doc, "/project/main.md");
+    let errors = validate(&system, "/project/main.md");
     assert!(errors.is_empty(), "expected no validation errors, got: {:?}", errors);
 }
 
@@ -782,8 +783,8 @@ boundaries:
     - NoBoundaryDefined
 ```");
 
-    let doc = parse(&fs, Path::new("/project/main.md")).unwrap();
-    let errors = validate(&doc, "/project/main.md");
+    // Undefined boundary is now a parse-time error
+    let errors = parse(&fs, Path::new("/project/main.md")).unwrap_err();
     assert_eq!(errors.len(), 1);
     assert!(errors[0].message.contains("requires undefined boundary 'NoBoundaryDefined'"));
 }
@@ -821,15 +822,15 @@ boundaries:
     - Api
 ```");
 
-    let doc = parse(&fs, Path::new("/project/main.md")).unwrap();
-    assert_eq!(doc.system.name, "nested-test");
-    assert_eq!(doc.boundaries.len(), 1);
-    assert_eq!(doc.boundaries[0].name, "Api");
-    assert_eq!(doc.components.len(), 1);
-    assert_eq!(doc.components[0].name, "Server");
-    assert_eq!(doc.components[0].provides, vec!["Api"]);
+    let system = parse(&fs, Path::new("/project/main.md")).unwrap();
+    assert_eq!(system.name, "nested-test");
+    assert_eq!(system.boundaries.len(), 1);
+    assert_eq!(system.boundaries[0].name, "Api");
+    assert_eq!(system.components.len(), 1);
+    assert_eq!(system.components[0].name, "Server");
+    assert_eq!(system.components[0].provides[0].name, "Api");
 
-    let errors = validate(&doc, "/project/main.md");
+    let errors = validate(&system, "/project/main.md");
     assert!(errors.is_empty());
 }
 
@@ -844,8 +845,8 @@ kind: system
 name: from-include
 ```");
 
-    let doc = parse(&fs, Path::new("/project/main.md")).unwrap();
-    assert_eq!(doc.system.name, "from-include");
+    let system = parse(&fs, Path::new("/project/main.md")).unwrap();
+    assert_eq!(system.name, "from-include");
 }
 
 #[test]
@@ -894,7 +895,8 @@ name: bad
 
 #[test]
 fn test_multiple_errors_in_one_document() {
-    let content = "\
+    // Test that invalid exposure is caught by the validator
+    let content_exposure = "\
 ```yaml
 kind: system
 name: test
@@ -907,6 +909,18 @@ kind: boundary
 name: Api
 exposure: bogus
 ```
+";
+    let system = parse_ok(content_exposure);
+    let errors = validate(&system, "test.md");
+    assert_eq!(errors.len(), 1, "expected 1 validation error, got: {:?}", errors);
+    assert!(errors[0].message.contains("Invalid exposure"));
+
+    // Test that undefined boundary is caught at parse time
+    let content_undefined = "\
+```yaml
+kind: system
+name: test
+```
 
 ---
 
@@ -918,10 +932,7 @@ boundaries:
     - NonExistent
 ```
 ";
-    let doc = parse_ok(content);
-    let errors = validate(&doc, "test.md");
-    assert_eq!(errors.len(), 2, "expected 2 validation errors, got: {:?}", errors);
-    assert!(errors.iter().any(|e| e.message.contains("Invalid exposure")));
+    let errors = parse_err(content_undefined);
     assert!(errors.iter().any(|e| e.message.contains("provides undefined boundary")));
 }
 
@@ -948,8 +959,8 @@ name: Api
 exposure: invalid_value
 ```
 ";
-    let doc = parse_ok(content);
-    let errors = validate(&doc, "test.md");
+    let system = parse_ok(content);
+    let errors = validate(&system, "test.md");
     assert_eq!(errors.len(), 1);
     // The boundary block starts at line 8, so the validator error should carry that line
     assert_eq!(errors[0].line, Some(8));
@@ -973,8 +984,8 @@ boundaries:
     - DoesNotExist
 ```
 ";
-    let doc = parse_ok(content);
-    let errors = validate(&doc, "test.md");
+    // Undefined boundary is now a parse-time error
+    let errors = parse_err(content);
     assert_eq!(errors.len(), 1);
     assert_eq!(errors[0].line, Some(8));
     assert!(errors[0].message.contains("requires undefined boundary"));
