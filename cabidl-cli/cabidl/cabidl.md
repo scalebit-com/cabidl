@@ -79,9 +79,11 @@ specification:
   typeDescription: Rust Traits
 ```
 
-The core parsing and validation contract. The trait and all domain types are defined in `./parser_trait.rs`.
+The core parsing and validation contract. The trait and all domain model types are defined in `./parser_trait.rs`.
 
-Implemented as the `cabidl-parser` crate in `parser/`. Contains the `CabidlParser` trait, all domain types (`CabidlDocument`, `SystemBlock`, `BoundaryBlock`, `ComponentBlock`, `ValidationError`), and no external dependencies. Each type lives in its own module file.
+The parser returns a `System` — a graph model where components hold `Arc` references to the boundaries they provide and require. This makes the architecture directly navigable without string lookups. The model mirrors the CABIDL specification structure: a `System` contains `Boundary` and `Component` instances, and components reference boundaries through `Arc`, reflecting the `provides`/`requires` relationships. This model is the foundation for validation, the `read` command output, and future tools like diagram generation.
+
+Implemented as the `cabidl-parser` crate in `parser/`. Contains the `CabidlParser` trait, the domain model (`System`, `Boundary`, `Component`, `ValidationError`), and no external dependencies. Each type lives in its own module file.
 
 ---
 
@@ -121,7 +123,8 @@ Implements all CABIDL parsing and validation logic:
 
 - Resolves `<!-- @include -->` directives recursively with circular include detection
 - Extracts YAML blocks from markdown, tracking line numbers for error reporting
-- Provides a pure `parse_content()` function that takes a fully-resolved CABIDL string and returns a structured document — this is the primary entry point for testing
+- Builds the `System` graph model — parses YAML blocks into `Boundary` and `Component` instances, then resolves boundary name references into `Arc` links
+- Provides a pure `parse_content()` function that takes a fully-resolved CABIDL string and returns a `System` model — this is the primary entry point for testing
 - Validates YAML block structure, name uniqueness, boundary reference integrity, and exposure values
 - Reports errors in compiler-style `file:line: message` format
 

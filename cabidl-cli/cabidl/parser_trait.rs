@@ -1,56 +1,55 @@
 use std::fmt;
 use std::path::Path;
+use std::sync::Arc;
 
 // ---------------------------------------------------------------------------
-// Domain types — each lives in its own file in the parser/ boundary crate
+// Domain model — a graph of the parsed CABIDL specification
+//
+// The parser returns a System that owns all Boundary and Component instances.
+// Components hold Arc references to the boundaries they provide and require,
+// making the architecture graph directly navigable without string lookups.
 // ---------------------------------------------------------------------------
 
-// parser/src/system.rs
-/// A parsed system block.
+/// A parsed CABIDL system — the root of the architecture model.
+///
+/// Contains all boundaries and components. Components reference boundaries
+/// via Arc, so the relationship graph can be traversed directly.
 #[derive(Debug)]
-pub struct SystemBlock {
+pub struct System {
     pub name: String,
-    /// Line number of the ```yaml fence that opened this block (1-based).
+    pub boundaries: Vec<Arc<Boundary>>,
+    pub components: Vec<Arc<Component>>,
+    /// Line number of the system block (1-based).
     pub line: Option<usize>,
 }
 
-// parser/src/boundary.rs
-/// A parsed boundary block.
+/// An architectural boundary — an interface or contract between components.
 #[derive(Debug)]
-pub struct BoundaryBlock {
+pub struct Boundary {
     pub name: String,
     pub exposure: Option<String>,
     pub specification_path: Option<String>,
     pub specification_type: Option<String>,
-    /// Line number of the ```yaml fence that opened this block (1-based).
+    /// Line number of the boundary block (1-based).
     pub line: Option<usize>,
 }
 
-// parser/src/component.rs
-/// A parsed component block.
+/// A component — a building block of the system.
+///
+/// Provides and requires boundaries via Arc references, mirroring the
+/// `boundaries.provides` and `boundaries.requires` fields from the spec.
 #[derive(Debug)]
-pub struct ComponentBlock {
+pub struct Component {
     pub name: String,
     pub technology: Option<String>,
-    pub provides: Vec<String>,
-    pub requires: Vec<String>,
-    /// Line number of the ```yaml fence that opened this block (1-based).
+    /// Boundaries this component exposes.
+    pub provides: Vec<Arc<Boundary>>,
+    /// Boundaries this component depends on.
+    pub requires: Vec<Arc<Boundary>>,
+    /// Line number of the component block (1-based).
     pub line: Option<usize>,
 }
 
-// parser/src/document.rs
-/// A parsed CABIDL document containing all sections.
-#[derive(Debug)]
-pub struct CabidlDocument {
-    /// The system definition (exactly one per document).
-    pub system: SystemBlock,
-    /// All boundary definitions.
-    pub boundaries: Vec<BoundaryBlock>,
-    /// All component definitions.
-    pub components: Vec<ComponentBlock>,
-}
-
-// parser/src/error.rs
 /// A validation error with location context.
 ///
 /// Formats as `file:line: message` when a line number is present,
@@ -71,22 +70,23 @@ impl fmt::Display for ValidationError {
     }
 }
 
-// parser/src/lib.rs
 /// The CabidlParser boundary trait.
 ///
-/// Provides parsing, include resolution, and validation of CABIDL documents.
+/// Parses CABIDL markdown into a System model with Arc-linked boundaries
+/// and components. The resulting graph is the internal representation of
+/// the specification and can be used for validation, display, or generation.
 pub trait CabidlParser {
-    /// Parse a CABIDL markdown file into a structured document.
+    /// Parse a CABIDL markdown file into a System model.
     /// Resolves `<!-- @include -->` directives recursively.
-    fn parse(&self, path: &Path) -> Result<CabidlDocument, Vec<ValidationError>>;
+    fn parse(&self, path: &Path) -> Result<System, Vec<ValidationError>>;
 
     /// Parse a CABIDL document from an already-resolved content string.
-    /// This is a pure function: string in, structured result out.
-    /// It is the primary entry point for testing without filesystem access.
-    fn parse_content(&self, content: &str, file: &str) -> Result<CabidlDocument, Vec<ValidationError>>;
+    /// Pure function: string in, System model out.
+    /// Primary entry point for testing without filesystem access.
+    fn parse_content(&self, content: &str, file: &str) -> Result<System, Vec<ValidationError>>;
 
-    /// Validate a parsed CABIDL document.
+    /// Validate a parsed System model.
     /// Checks boundary exposure values, name uniqueness, and referential integrity.
     /// Returns an empty Vec on success.
-    fn validate(&self, doc: &CabidlDocument, file: &str) -> Vec<ValidationError>;
+    fn validate(&self, system: &System, file: &str) -> Vec<ValidationError>;
 }
