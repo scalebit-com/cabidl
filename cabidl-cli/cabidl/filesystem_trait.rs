@@ -21,4 +21,7 @@ pub trait Filesystem {
     /// For real filesystems, this resolves symlinks and relative components.
     /// For in-memory filesystems, this normalizes the path without OS calls.
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
+
+    /// Write the given content to a file as UTF-8, creating or overwriting the file.
+    fn write_string(&self, path: &Path, content: &str) -> io::Result<()>;
 }

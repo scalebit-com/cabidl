@@ -21,3 +21,22 @@ subcommands:
             help: Path to the CABIDL markdown file
             required: true
             index: 1
+  - diagram:
+      about: Generate an architecture diagram from a CABIDL document
+      args:
+        - file:
+            help: Path to the CABIDL markdown file
+            required: true
+            index: 1
+        - type:
+            short: t
+            long: type
+            help: Diagram output format
+            default_value: graphviz
+            possible_values:
+              - graphviz
+        - output-file:
+            short: o
+            long: output-file
+            help: Path to the output file
+            required: true

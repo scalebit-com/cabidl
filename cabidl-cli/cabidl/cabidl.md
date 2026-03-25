@@ -8,7 +8,7 @@ kind: system
 name: cabidl
 ```
 
-A command-line tool for working with CABIDL architecture specification files. It reads CABIDL markdown documents, resolves `<!-- @include -->` directives into a single unified output, and validates that all YAML blocks conform to the CABIDL schemas and that boundary references between components are consistent.
+A command-line tool for working with CABIDL architecture specification files. It reads CABIDL markdown documents, resolves `<!-- @include -->` directives into a single unified output, validates that all YAML blocks conform to the CABIDL schemas and that boundary references between components are consistent, and generates architecture diagrams in various formats.
 
 The system is implemented as a Rust Cargo workspace. Each boundary is its own crate containing trait definitions and types. Each component is its own crate containing the implementation. Workspace dependencies mirror the `provides`/`requires` relationships.
 
@@ -20,11 +20,17 @@ cabidl-cli/
 ├── cabidl/                             # This CABIDL specification
 │   ├── cabidl.md
 │   ├── clap.yaml
+│   ├── diagram_provider_trait.rs
+│   ├── diagram_trait.rs
 │   ├── filesystem_trait.rs
 │   └── parser_trait.rs
+├── diagram/                            # Diagram boundary (cabidl-diagram)
+├── diagram-provider/                   # DiagramProvider boundary (cabidl-diagram-provider)
 ├── filesystem/                         # Filesystem boundary (cabidl-filesystem)
 ├── parser/                             # CabidlParser boundary (cabidl-parser)
+├── diagram-impl/                       # Diagram component (cabidl-diagram-impl)
 ├── filesystem-impl/                    # FilesystemImpl component (cabidl-filesystem-impl)
+├── graphviz/                           # Graphviz component (cabidl-graphviz)
 ├── parser-impl/                        # Parser component (cabidl-parser-impl)
 ├── cli/                                # Cli component (cabidl binary)
 └── tests/
@@ -44,10 +50,11 @@ specification:
   typeDescription: CLAP YAML
 ```
 
-The command-line interface exposed to the user. Defined by `clap.yaml` and implemented directly inside the Cli component crate using clap's derive API. Two subcommands:
+The command-line interface exposed to the user. Defined by `clap.yaml` and implemented directly inside the Cli component crate using clap's derive API. Three subcommands:
 
 - **read** — Resolves all `<!-- @include -->` directives and writes a single unified CABIDL document to stdout.
 - **validate** — Validates document structure, YAML blocks, and boundary reference integrity. Silent on success; errors to stderr with non-zero exit on failure.
+- **diagram** — Parses the CABIDL document, generates an architecture diagram in the requested format (`-t/--type`, default `graphviz`), and writes the result to the specified output file (`-o/--output-file`).
 
 ---
 
@@ -62,7 +69,7 @@ specification:
   typeDescription: Rust Traits
 ```
 
-Abstraction over filesystem operations so that the parser can be tested with in-memory file systems without real I/O. The trait contract is defined in `./filesystem_trait.rs`.
+Abstraction over filesystem operations so that the parser and diagram components can be tested with in-memory file systems without real I/O. Covers both read and write operations. The trait contract is defined in `./filesystem_trait.rs`.
 
 Implemented as the `cabidl-filesystem` crate in `filesystem/`. Contains only the trait — no implementations, no external dependencies.
 
@@ -87,6 +94,42 @@ Implemented as the `cabidl-parser` crate in `parser/`. Contains the `CabidlParse
 
 ---
 
+## Boundary: DiagramProvider
+
+```yaml
+kind: boundary
+name: DiagramProvider
+exposure: internal
+specification:
+  path: ./diagram_provider_trait.rs
+  typeDescription: Rust Traits
+```
+
+The diagram provider contract. Each implementer generates diagram content in a specific output format from a parsed System model. The trait and the `DiagramError` type are defined in `./diagram_provider_trait.rs`.
+
+A provider identifies itself via a `diagram_type()` method that returns a string (e.g. `"graphviz"`). The `generate()` method takes a `&System` and returns the diagram content as a `String`, or a `DiagramError` on failure.
+
+Implemented as the `cabidl-diagram-provider` crate in `diagram-provider/`. Contains only the trait and error type — no implementations, no external dependencies beyond `cabidl-parser`.
+
+---
+
+## Boundary: Diagram
+
+```yaml
+kind: boundary
+name: Diagram
+exposure: internal
+specification:
+  path: ./diagram_trait.rs
+  typeDescription: Rust Traits
+```
+
+The diagram orchestration contract. Takes a parsed System model, a diagram type string, and an output file path. Selects the appropriate DiagramProvider, generates the content, and writes it to the file. The trait is defined in `./diagram_trait.rs`.
+
+Implemented as the `cabidl-diagram` crate in `diagram/`. Contains only the trait — no implementations. Depends on `cabidl-parser` (for the System type) and `cabidl-diagram-provider` (for the DiagramError type).
+
+---
+
 ## Component: Cli
 
 ```yaml
@@ -98,11 +141,12 @@ boundaries:
     - CliInterface
   requires:
     - CabidlParser
+    - Diagram
 ```
 
-Entry point of the application. Parses command-line arguments, dispatches to the appropriate subcommand, and formats output or errors for the terminal. Contains no domain logic — delegates all parsing and validation to the CabidlParser boundary.
+Entry point of the application. Parses command-line arguments, dispatches to the appropriate subcommand, and formats output or errors for the terminal. Contains no domain logic — delegates parsing and validation to the CabidlParser boundary and diagram generation to the Diagram boundary.
 
-Implemented as the `cabidl` binary crate in `cli/`. Depends on `cabidl-parser`, `cabidl-parser-impl`, `cabidl-filesystem-impl`, and `clap`.
+Implemented as the `cabidl` binary crate in `cli/`. Depends on `cabidl-parser`, `cabidl-parser-impl`, `cabidl-filesystem-impl`, `cabidl-diagram`, `cabidl-diagram-impl`, and `clap`.
 
 ---
 
@@ -146,6 +190,43 @@ boundaries:
 Implements the Filesystem boundary. Provides a real implementation using `std::fs` and an in-memory implementation for testing.
 
 Implemented as the `cabidl-filesystem-impl` crate in `filesystem-impl/`. Depends on `cabidl-filesystem`.
+
+---
+
+## Component: Diagram
+
+```yaml
+kind: component
+name: Diagram
+technology: Rust
+boundaries:
+  provides:
+    - Diagram
+  requires:
+    - DiagramProvider
+    - Filesystem
+```
+
+Implements the Diagram boundary. Holds a registry of DiagramProvider implementations. On invocation, selects the provider matching the requested diagram type, calls it to generate content, and writes the result to the output file via the Filesystem boundary.
+
+Implemented as the `cabidl-diagram-impl` crate in `diagram-impl/`. Depends on `cabidl-diagram`, `cabidl-diagram-provider`, and `cabidl-filesystem`.
+
+---
+
+## Component: Graphviz
+
+```yaml
+kind: component
+name: Graphviz
+technology: Rust
+boundaries:
+  provides:
+    - DiagramProvider
+```
+
+Implements the DiagramProvider boundary for Graphviz DOT format. Takes a System model and generates a DOT language string representing the architecture graph — components as nodes, boundary relationships as edges, with external boundaries visually distinguished. The output uses a dark mode color scheme with a professional, clean visual style.
+
+Implemented as the `cabidl-graphviz` crate in `graphviz/`. Depends on `cabidl-diagram-provider` and `cabidl-parser`.
 
 ---
 
