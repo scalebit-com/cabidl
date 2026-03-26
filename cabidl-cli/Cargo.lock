@@ -65,10 +65,40 @@ dependencies = [
 name = "cabidl"
 version = "1.0.0"
 dependencies = [
+ "cabidl-diagram",
+ "cabidl-diagram-impl",
  "cabidl-filesystem-impl",
+ "cabidl-graphviz",
  "cabidl-parser",
  "cabidl-parser-impl",
  "clap",
+]
+
+[[package]]
+name = "cabidl-diagram"
+version = "1.0.0"
+dependencies = [
+ "cabidl-diagram-provider",
+ "cabidl-parser",
+]
+
+[[package]]
+name = "cabidl-diagram-impl"
+version = "1.0.0"
+dependencies = [
+ "cabidl-diagram",
+ "cabidl-diagram-provider",
+ "cabidl-filesystem",
+ "cabidl-filesystem-impl",
+ "cabidl-graphviz",
+ "cabidl-parser",
+]
+
+[[package]]
+name = "cabidl-diagram-provider"
+version = "1.0.0"
+dependencies = [
+ "cabidl-parser",
 ]
 
 [[package]]
@@ -80,6 +110,14 @@ name = "cabidl-filesystem-impl"
 version = "1.0.0"
 dependencies = [
  "cabidl-filesystem",
+]
+
+[[package]]
+name = "cabidl-graphviz"
+version = "1.0.0"
+dependencies = [
+ "cabidl-diagram-provider",
+ "cabidl-parser",
 ]
 
 [[package]]

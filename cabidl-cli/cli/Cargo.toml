@@ -11,4 +11,7 @@ path = "src/main.rs"
 cabidl-parser = { path = "../parser" }
 cabidl-parser-impl = { path = "../parser-impl" }
 cabidl-filesystem-impl = { path = "../filesystem-impl" }
+cabidl-diagram = { path = "../diagram" }
+cabidl-diagram-impl = { path = "../diagram-impl" }
+cabidl-graphviz = { path = "../graphviz" }
 clap = { version = "4", features = ["derive"] }

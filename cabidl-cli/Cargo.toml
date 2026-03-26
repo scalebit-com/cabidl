@@ -1,3 +1,13 @@
 [workspace]
-members = ["filesystem", "parser", "filesystem-impl", "parser-impl", "cli"]
+members = [
+    "filesystem",
+    "parser",
+    "filesystem-impl",
+    "parser-impl",
+    "diagram-provider",
+    "diagram",
+    "diagram-impl",
+    "graphviz",
+    "cli",
+]
 resolver = "2"

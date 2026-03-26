@@ -1,0 +1,7 @@
+[package]
+name = "cabidl-diagram-provider"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+cabidl-parser = { path = "../parser" }

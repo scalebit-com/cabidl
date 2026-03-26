@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::process;
 
+use cabidl_diagram::Diagram;
 use cabidl_parser::CabidlParser;
 use cabidl_parser_impl::CabidlParserImpl;
 use cabidl_filesystem_impl::RealFilesystem;
@@ -25,6 +26,17 @@ enum Commands {
     Validate {
         /// Path to the CABIDL markdown file
         file: PathBuf,
+    },
+    /// Generate an architecture diagram from a CABIDL document
+    Diagram {
+        /// Path to the CABIDL markdown file
+        file: PathBuf,
+        /// Diagram output format
+        #[arg(short = 't', long = "type", default_value = "graphviz")]
+        diagram_type: String,
+        /// Path to the output file
+        #[arg(short = 'o', long = "output-file")]
+        output_file: PathBuf,
     },
 }
 
@@ -54,6 +66,35 @@ fn main() {
                         for e in &errors {
                             eprintln!("error: {}", e);
                         }
+                        process::exit(1);
+                    }
+                }
+                Err(errors) => {
+                    for e in &errors {
+                        eprintln!("error: {}", e);
+                    }
+                    process::exit(1);
+                }
+            }
+        }
+        Commands::Diagram { file, diagram_type, output_file } => {
+            match parser.parse(&file) {
+                Ok(system) => {
+                    let errors = parser.validate(&system, &file.display().to_string());
+                    if !errors.is_empty() {
+                        for e in &errors {
+                            eprintln!("error: {}", e);
+                        }
+                        process::exit(1);
+                    }
+
+                    let diagram = cabidl_diagram_impl::DiagramImpl::new(
+                        vec![Box::new(cabidl_graphviz::GraphvizProvider)],
+                        Box::new(RealFilesystem),
+                    );
+
+                    if let Err(e) = diagram.generate(&system, &diagram_type, &output_file) {
+                        eprintln!("error: {}", e);
                         process::exit(1);
                     }
                 }

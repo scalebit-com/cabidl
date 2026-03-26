@@ -26,4 +26,8 @@ impl Filesystem for RealFilesystem {
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         path.canonicalize()
     }
+
+    fn write_string(&self, path: &Path, content: &str) -> io::Result<()> {
+        std::fs::write(path, content)
+    }
 }
