@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version from version.txt
+        run: |
+          VERSION=$(cat version.txt | tr -d '[:space:]')
+          echo "Setting version to $VERSION"
+          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec sed -i "s/^version = \".*\"/version = \"$VERSION\"/" {} +
+          cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Run tests
+        run: cargo test --manifest-path cabidl-cli/Cargo.toml
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    env:
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - name: linux-arm64
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
+          - name: macos-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - name: macos-x86_64
+            runner: macos-13
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - name: windows-x86_64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version from version.txt (unix)
+        if: runner.os != 'Windows'
+        run: |
+          VERSION=$(cat version.txt | tr -d '[:space:]')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec sed -i "s/^version = \".*\"/version = \"$VERSION\"/" {} +
+          cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
+
+      - name: Set version from version.txt (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = (Get-Content version.txt).Trim()
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+          Get-ChildItem -Path cabidl-cli -Recurse -Filter 'Cargo.toml' |
+            Where-Object { $_.FullName -notmatch 'target' } |
+            ForEach-Object {
+              (Get-Content $_.FullName) -replace '^version = ".*"', "version = `"$VERSION`"" |
+                Set-Content $_.FullName
+            }
+          cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build
+        run: cargo build --manifest-path cabidl-cli/Cargo.toml --release --target ${{ matrix.target }} --package cabidl
+
+      - name: Package (unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          STAGING="cabidl-${{ env.VERSION }}-${{ matrix.name }}"
+          mkdir "$STAGING"
+          cp "cabidl-cli/target/${{ matrix.target }}/release/cabidl" "$STAGING/"
+          tar czf "cabidl-${{ env.VERSION }}-${{ matrix.name }}.tar.gz" "$STAGING"
+
+      - name: Package (windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $STAGING = "cabidl-${{ env.VERSION }}-${{ matrix.name }}"
+          New-Item -ItemType Directory -Path $STAGING
+          Copy-Item "cabidl-cli/target/${{ matrix.target }}/release/cabidl.exe" "$STAGING/"
+          Compress-Archive -Path "$STAGING/*" -DestinationPath "cabidl-${{ env.VERSION }}-${{ matrix.name }}.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cabidl-${{ matrix.name }}
+          path: cabidl-*-${{ matrix.name }}.${{ matrix.archive }}
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            artifacts/*
