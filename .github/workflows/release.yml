@@ -17,7 +17,7 @@ jobs:
         run: |
           VERSION=$(cat version.txt | tr -d '[:space:]')
           echo "Setting version to $VERSION"
-          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec sed -i "s/^version = \".*\"/version = \"$VERSION\"/" {} +
+          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" {} +
           cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
 
       - uses: dtolnay/rust-toolchain@stable
@@ -63,7 +63,7 @@ jobs:
         run: |
           VERSION=$(cat version.txt | tr -d '[:space:]')
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec sed -i "s/^version = \".*\"/version = \"$VERSION\"/" {} +
+          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" {} +
           cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
 
       - name: Set version from version.txt (windows)
