@@ -2,12 +2,14 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::process;
 
+use cabidl_ai_provider::AiProvider;
 use cabidl_diagram::Diagram;
 use cabidl_parser::CabidlParser;
 use cabidl_parser_impl::CabidlParserImpl;
 use cabidl_filesystem_impl::RealFilesystem;
 
 const LONG_VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (spec 1.1)");
+const SKILL_CONTENT: &str = include_str!("../../skill.md");
 
 #[derive(Parser)]
 #[command(name = "cabidl", version, long_version = LONG_VERSION)]
@@ -39,6 +41,21 @@ enum Commands {
         /// Path to the output file
         #[arg(short = 'o', long = "output-file")]
         output_file: PathBuf,
+    },
+    /// Manage cabidl skills for AI tool providers
+    Skill {
+        #[command(subcommand)]
+        command: SkillCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum SkillCommands {
+    /// Install the cabidl skill to an AI tool provider
+    Install {
+        /// Target directory for skill installation (defaults to provider's default location)
+        #[arg(short = 'd', long = "target-dir")]
+        target_dir: Option<PathBuf>,
     },
 }
 
@@ -105,6 +122,22 @@ fn main() {
                         eprintln!("error: {}", e);
                     }
                     process::exit(1);
+                }
+            }
+        }
+        Commands::Skill { command } => {
+            match command {
+                SkillCommands::Install { target_dir } => {
+                    let provider = cabidl_claude_code::ClaudeCodeProvider::new(
+                        Box::new(RealFilesystem),
+                    );
+                    if let Err(e) = provider.install_skill(
+                        target_dir.as_deref(),
+                        SKILL_CONTENT,
+                    ) {
+                        eprintln!("error: {}", e);
+                        process::exit(1);
+                    }
                 }
             }
         }

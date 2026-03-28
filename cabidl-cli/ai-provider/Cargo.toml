@@ -1,0 +1,6 @@
+[package]
+name = "cabidl-ai-provider"
+version.workspace = true
+edition = "2024"
+
+[dependencies]

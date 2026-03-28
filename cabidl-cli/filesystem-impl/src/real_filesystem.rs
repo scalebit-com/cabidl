@@ -30,4 +30,8 @@ impl Filesystem for RealFilesystem {
     fn write_string(&self, path: &Path, content: &str) -> io::Result<()> {
         std::fs::write(path, content)
     }
+
+    fn create_dir_all(&self, path: &Path) -> io::Result<()> {
+        std::fs::create_dir_all(path)
+    }
 }

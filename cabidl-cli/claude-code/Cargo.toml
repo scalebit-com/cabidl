@@ -1,0 +1,11 @@
+[package]
+name = "cabidl-claude-code"
+version.workspace = true
+edition = "2024"
+
+[dependencies]
+cabidl-ai-provider = { path = "../ai-provider" }
+cabidl-filesystem = { path = "../filesystem" }
+
+[dev-dependencies]
+cabidl-filesystem-impl = { path = "../filesystem-impl" }

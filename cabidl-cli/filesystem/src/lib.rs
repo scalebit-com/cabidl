@@ -24,4 +24,9 @@ pub trait Filesystem {
 
     /// Write the given content to a file as UTF-8, creating or overwriting the file.
     fn write_string(&self, path: &Path, content: &str) -> io::Result<()>;
+
+    /// Create a directory and all its parent directories.
+    /// For real filesystems, delegates to `std::fs::create_dir_all`.
+    /// For in-memory filesystems, this is a no-op (files are stored by path).
+    fn create_dir_all(&self, path: &Path) -> io::Result<()>;
 }

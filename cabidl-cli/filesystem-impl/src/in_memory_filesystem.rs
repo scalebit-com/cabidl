@@ -57,6 +57,10 @@ impl Filesystem for InMemoryFilesystem {
         self.files.borrow_mut().insert(path.to_path_buf(), content.to_string());
         Ok(())
     }
+
+    fn create_dir_all(&self, _path: &Path) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 /// Normalize a path by resolving `.` and `..` components without OS calls.

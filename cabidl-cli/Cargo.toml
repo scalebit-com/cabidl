@@ -1,8 +1,9 @@
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 
 [workspace]
 members = [
+    "ai-provider",
     "filesystem",
     "parser",
     "filesystem-impl",
@@ -11,6 +12,7 @@ members = [
     "diagram",
     "diagram-impl",
     "graphviz",
+    "claude-code",
     "cli",
 ]
 resolver = "2"
