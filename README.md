@@ -1,6 +1,10 @@
 # cabidl
 Component Architecture Boundary and Interface Definition Language
 
+```bash
+brew install scalebit-com/tools/cabidl
+```
+
 ---
 
 # What is CABIDL?
