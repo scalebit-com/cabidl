@@ -48,6 +48,20 @@ impl AiProvider for ClaudeCodeProvider {
 
         Ok(())
     }
+
+    fn init_project(
+        &self,
+        target_dir: &Path,
+    ) -> Result<(), AiProviderError> {
+        let claude_md = target_dir.join("CLAUDE.md");
+        let content = "* The specification for how this software is built is defined in cabidl/cabidl.md and it use /cabidl skill to understand how to build a project with cabidl specifications and that skill will use the cabidl cli that you have installed.\n";
+        self.fs
+            .write_string(&claude_md, content)
+            .map_err(|e| AiProviderError {
+                message: format!("Failed to write '{}': {}", claude_md.display(), e),
+            })?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -82,6 +96,14 @@ mod tests {
         let fs = InMemoryFilesystem::new();
         let provider: Box<dyn AiProvider> = Box::new(ClaudeCodeProvider::new(Box::new(fs)));
         let result = provider.install_skill(None, "# Test Skill\n");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn init_project_creates_claude_md() {
+        let fs = InMemoryFilesystem::new();
+        let provider: Box<dyn AiProvider> = Box::new(ClaudeCodeProvider::new(Box::new(fs)));
+        let result = provider.init_project(Path::new("/test/project"));
         assert!(result.is_ok());
     }
 }

@@ -1,0 +1,3 @@
+name: simple-ls
+laguage: rust
+description: a simple rust ls implementation that can list files

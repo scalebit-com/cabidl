@@ -1,0 +1,6 @@
+[package]
+name = "cabidl-init"
+version.workspace = true
+edition = "2024"
+
+[dependencies]

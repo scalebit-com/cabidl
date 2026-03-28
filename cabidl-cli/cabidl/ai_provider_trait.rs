@@ -33,4 +33,13 @@ pub trait AiProvider {
         target_dir: Option<&Path>,
         skill_content: &str,
     ) -> Result<(), AiProviderError>;
+
+    /// Initialize provider-specific project files in the target directory.
+    ///
+    /// For Claude Code, this creates a `CLAUDE.md` file with instructions
+    /// pointing to the cabidl specification and skill.
+    fn init_project(
+        &self,
+        target_dir: &Path,
+    ) -> Result<(), AiProviderError>;
 }

@@ -1,0 +1,13 @@
+name: simple-ls
+version: "1.0.0"
+about: A minimal ls implementation
+args:
+  - path:
+      help: Directory to list
+      index: 1
+      default_value: "."
+  - long:
+      short: l
+      long: long
+      help: Use long listing format
+      action: SetTrue

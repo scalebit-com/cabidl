@@ -16,4 +16,6 @@ cabidl-diagram-impl = { path = "../diagram-impl" }
 cabidl-graphviz = { path = "../graphviz" }
 cabidl-ai-provider = { path = "../ai-provider" }
 cabidl-claude-code = { path = "../claude-code" }
+cabidl-init = { path = "../init" }
+cabidl-init-impl = { path = "../init-impl" }
 clap = { version = "4", features = ["derive"] }

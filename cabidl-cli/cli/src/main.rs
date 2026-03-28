@@ -4,6 +4,7 @@ use std::process;
 
 use cabidl_ai_provider::AiProvider;
 use cabidl_diagram::Diagram;
+use cabidl_init::Init;
 use cabidl_parser::CabidlParser;
 use cabidl_parser_impl::CabidlParserImpl;
 use cabidl_filesystem_impl::RealFilesystem;
@@ -46,6 +47,18 @@ enum Commands {
     Skill {
         #[command(subcommand)]
         command: SkillCommands,
+    },
+    /// Initialize a new CABIDL project from a template
+    Init {
+        /// Target directory (defaults to current directory)
+        #[arg(short = 'd', long = "dir")]
+        dir: Option<PathBuf>,
+        /// AI tool provider for project setup
+        #[arg(short = 'p', long = "provider", default_value = "claude-code")]
+        provider: String,
+        /// Template name (omit to list available templates)
+        #[arg(short = 't', long = "template")]
+        template: Option<String>,
     },
 }
 
@@ -135,6 +148,35 @@ fn main() {
                         target_dir.as_deref(),
                         SKILL_CONTENT,
                     ) {
+                        eprintln!("error: {}", e);
+                        process::exit(1);
+                    }
+                }
+            }
+        }
+        Commands::Init { dir, provider: _, template } => {
+            let init = cabidl_init_impl::InitImpl::new(Box::new(RealFilesystem));
+            match template {
+                None => {
+                    let mut templates = init.list_templates();
+                    templates.sort_by(|a, b| {
+                        a.language.cmp(&b.language).then(a.name.cmp(&b.name))
+                    });
+                    println!("{:<12} {:<20} {}", "Language", "Name", "Description");
+                    for t in &templates {
+                        println!("{:<12} {:<20} {}", t.language, t.name, t.description);
+                    }
+                }
+                Some(name) => {
+                    let target = dir.unwrap_or_else(|| PathBuf::from("."));
+                    if let Err(e) = init.scaffold(&name, &target) {
+                        eprintln!("error: {}", e);
+                        process::exit(1);
+                    }
+                    let provider = cabidl_claude_code::ClaudeCodeProvider::new(
+                        Box::new(RealFilesystem),
+                    );
+                    if let Err(e) = provider.init_project(&target) {
                         eprintln!("error: {}", e);
                         process::exit(1);
                     }

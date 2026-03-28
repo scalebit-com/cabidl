@@ -56,3 +56,25 @@ subcommands:
                   help: Target directory for skill installation (defaults to provider's default location)
                   takes_value: true
                   required: false
+  - init:
+      about: Initialize a new CABIDL project from a template
+      args:
+        - dir:
+            short: d
+            long: dir
+            help: Target directory (defaults to current directory)
+            takes_value: true
+            required: false
+        - provider:
+            short: p
+            long: provider
+            help: AI tool provider for project setup (e.g. claude-code)
+            takes_value: true
+            default_value: claude-code
+            required: false
+        - template:
+            short: t
+            long: template
+            help: Template name (omit to list available templates)
+            takes_value: true
+            required: false
