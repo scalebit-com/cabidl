@@ -1,20 +1,22 @@
 [workspace.package]
-version = "0.4.0"
+version = "0.5.0"
 
 [workspace]
 members = [
-    "ai-provider",
-    "filesystem",
-    "init",
-    "parser",
-    "filesystem-impl",
-    "init-impl",
-    "parser-impl",
-    "diagram-provider",
-    "diagram",
-    "diagram-impl",
-    "graphviz",
-    "claude-code",
-    "cli",
+    "boundaries/ai-provider",
+    "boundaries/diagram",
+    "boundaries/diagram-provider",
+    "boundaries/filesystem",
+    "boundaries/init",
+    "boundaries/parser",
+    "boundaries/wiring",
+    "components/claude-code",
+    "components/cli",
+    "components/diagram-impl",
+    "components/filesystem-impl",
+    "components/graphviz",
+    "components/init-impl",
+    "components/parser-impl",
+    "components/wiring-impl",
 ]
 resolver = "2"

@@ -1,0 +1,12 @@
+[package]
+name = "cabidl-diagram-impl"
+version.workspace = true
+edition = "2024"
+
+[dependencies]
+cabidl-diagram = { path = "../../boundaries/diagram" }
+cabidl-diagram-provider = { path = "../../boundaries/diagram-provider" }
+cabidl-parser = { path = "../../boundaries/parser" }
+
+[dev-dependencies]
+cabidl-graphviz = { path = "../graphviz" }

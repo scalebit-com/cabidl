@@ -75,28 +75,24 @@ checksum = "843867be96c8daad0d758b57df9392b6d8d271134fce549de6ce169ff98a92af"
 
 [[package]]
 name = "cabidl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
- "cabidl-ai-provider",
- "cabidl-claude-code",
- "cabidl-diagram",
- "cabidl-diagram-impl",
+ "cabidl-filesystem",
  "cabidl-filesystem-impl",
- "cabidl-graphviz",
- "cabidl-init",
- "cabidl-init-impl",
  "cabidl-parser",
  "cabidl-parser-impl",
+ "cabidl-wiring",
+ "cabidl-wiring-impl",
  "clap",
 ]
 
 [[package]]
 name = "cabidl-ai-provider"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "cabidl-claude-code"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-ai-provider",
  "cabidl-filesystem",
@@ -105,7 +101,7 @@ dependencies = [
 
 [[package]]
 name = "cabidl-diagram"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-diagram-provider",
  "cabidl-parser",
@@ -113,37 +109,35 @@ dependencies = [
 
 [[package]]
 name = "cabidl-diagram-impl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-diagram",
  "cabidl-diagram-provider",
- "cabidl-filesystem",
- "cabidl-filesystem-impl",
  "cabidl-graphviz",
  "cabidl-parser",
 ]
 
 [[package]]
 name = "cabidl-diagram-provider"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-parser",
 ]
 
 [[package]]
 name = "cabidl-filesystem"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "cabidl-filesystem-impl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-filesystem",
 ]
 
 [[package]]
 name = "cabidl-graphviz"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-diagram-provider",
  "cabidl-parser",
@@ -151,11 +145,11 @@ dependencies = [
 
 [[package]]
 name = "cabidl-init"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "cabidl-init-impl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-filesystem",
  "cabidl-filesystem-impl",
@@ -166,11 +160,11 @@ dependencies = [
 
 [[package]]
 name = "cabidl-parser"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "cabidl-parser-impl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "cabidl-filesystem",
  "cabidl-filesystem-impl",
@@ -178,6 +172,35 @@ dependencies = [
  "regex",
  "serde",
  "serde_yaml",
+]
+
+[[package]]
+name = "cabidl-wiring"
+version = "0.5.0"
+dependencies = [
+ "cabidl-ai-provider",
+ "cabidl-diagram",
+ "cabidl-init",
+ "cabidl-parser",
+]
+
+[[package]]
+name = "cabidl-wiring-impl"
+version = "0.5.0"
+dependencies = [
+ "cabidl-ai-provider",
+ "cabidl-claude-code",
+ "cabidl-diagram",
+ "cabidl-diagram-impl",
+ "cabidl-diagram-provider",
+ "cabidl-filesystem",
+ "cabidl-filesystem-impl",
+ "cabidl-graphviz",
+ "cabidl-init",
+ "cabidl-init-impl",
+ "cabidl-parser",
+ "cabidl-parser-impl",
+ "cabidl-wiring",
 ]
 
 [[package]]

@@ -1,7 +1,0 @@
-[package]
-name = "cabidl-filesystem-impl"
-version.workspace = true
-edition = "2024"
-
-[dependencies]
-cabidl-filesystem = { path = "../filesystem" }

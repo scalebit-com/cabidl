@@ -1,0 +1,17 @@
+[package]
+name = "cabidl"
+version.workspace = true
+edition = "2024"
+
+[[bin]]
+name = "cabidl"
+path = "src/main.rs"
+
+[dependencies]
+cabidl-wiring = { path = "../../boundaries/wiring" }
+cabidl-wiring-impl = { path = "../wiring-impl" }
+cabidl-parser = { path = "../../boundaries/parser" }
+cabidl-parser-impl = { path = "../parser-impl" }
+cabidl-filesystem = { path = "../../boundaries/filesystem" }
+cabidl-filesystem-impl = { path = "../filesystem-impl" }
+clap = { version = "4", features = ["derive"] }

@@ -6,10 +6,6 @@ args:
       long: version
       help: Print version information (-V for short version, --version includes spec version)
       takes_value: false
-  - file:
-      help: Path to the CABIDL markdown file
-      required: true
-      index: 1
 subcommands:
   - read:
       about: Resolve includes and output a single unified CABIDL document

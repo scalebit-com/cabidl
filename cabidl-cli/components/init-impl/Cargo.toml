@@ -1,0 +1,17 @@
+[package]
+name = "cabidl-init-impl"
+version.workspace = true
+edition = "2024"
+
+[dependencies]
+cabidl-init = { path = "../../boundaries/init" }
+cabidl-filesystem = { path = "../../boundaries/filesystem" }
+flate2 = "1"
+tar = "0.4"
+
+[build-dependencies]
+flate2 = "1"
+tar = "0.4"
+
+[dev-dependencies]
+cabidl-filesystem-impl = { path = "../filesystem-impl" }

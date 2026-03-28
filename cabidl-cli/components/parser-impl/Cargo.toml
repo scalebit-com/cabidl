@@ -1,0 +1,14 @@
+[package]
+name = "cabidl-parser-impl"
+version.workspace = true
+edition = "2024"
+
+[dependencies]
+cabidl-parser = { path = "../../boundaries/parser" }
+cabidl-filesystem = { path = "../../boundaries/filesystem" }
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+regex = "1"
+
+[dev-dependencies]
+cabidl-filesystem-impl = { path = "../filesystem-impl" }

@@ -1,8 +1,0 @@
-[package]
-name = "cabidl-graphviz"
-version.workspace = true
-edition = "2024"
-
-[dependencies]
-cabidl-diagram-provider = { path = "../diagram-provider" }
-cabidl-parser = { path = "../parser" }

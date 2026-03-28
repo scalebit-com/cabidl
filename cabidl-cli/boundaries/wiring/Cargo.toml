@@ -1,0 +1,10 @@
+[package]
+name = "cabidl-wiring"
+version.workspace = true
+edition = "2024"
+
+[dependencies]
+cabidl-ai-provider = { path = "../ai-provider" }
+cabidl-diagram = { path = "../diagram" }
+cabidl-init = { path = "../init" }
+cabidl-parser = { path = "../parser" }
