@@ -8,7 +8,7 @@ kind: system
 name: cabidl
 ```
 
-A command-line tool for working with CABIDL architecture specification files. It reads CABIDL markdown documents, resolves `<!-- @include -->` directives into a single unified output, validates that all YAML blocks conform to the CABIDL schemas and that boundary references between components are consistent, and generates architecture diagrams in various formats.
+A command-line tool for working with CABIDL architecture specification files. It reads CABIDL markdown documents, resolves `<!-- @include -->` directives into a single unified output, validates that all YAML blocks conform to the CABIDL schemas and that boundary references between components are consistent, generates architecture diagrams in various formats, and installs AI tool provider skills for spec-first development workflows.
 
 The system is implemented as a Rust Cargo workspace. Each boundary is its own crate containing trait definitions and types. Each component is its own crate containing the implementation. Workspace dependencies mirror the `provides`/`requires` relationships.
 
@@ -17,17 +17,21 @@ The system is implemented as a Rust Cargo workspace. Each boundary is its own cr
 ```
 cabidl-cli/
 ├── Cargo.toml                          # Workspace root
+├── skill.md                            # CABIDL skill file (embedded into the binary)
 ├── cabidl/                             # This CABIDL specification
 │   ├── cabidl.md
 │   ├── clap.yaml
+│   ├── ai_provider_trait.rs
 │   ├── diagram_provider_trait.rs
 │   ├── diagram_trait.rs
 │   ├── filesystem_trait.rs
 │   └── parser_trait.rs
+├── ai-provider/                        # AiProvider boundary (cabidl-ai-provider)
 ├── diagram/                            # Diagram boundary (cabidl-diagram)
 ├── diagram-provider/                   # DiagramProvider boundary (cabidl-diagram-provider)
 ├── filesystem/                         # Filesystem boundary (cabidl-filesystem)
 ├── parser/                             # CabidlParser boundary (cabidl-parser)
+├── claude-code/                        # ClaudeCode component (cabidl-claude-code)
 ├── diagram-impl/                       # Diagram component (cabidl-diagram-impl)
 ├── filesystem-impl/                    # FilesystemImpl component (cabidl-filesystem-impl)
 ├── graphviz/                           # Graphviz component (cabidl-graphviz)
@@ -56,11 +60,12 @@ Global options:
 
 - **--version** / **-V** — Prints version information. The short form (`-V`) prints the CLI version number. The long form (`--version`) prints the CLI version and the supported CABIDL specification version (e.g. `cabidl 0.1.1 (spec 1.1)`). The CLI version is embedded at compile time from `CARGO_PKG_VERSION`; the spec version is a compile-time constant matching `specification.md`.
 
-Three subcommands:
+Four subcommands:
 
 - **read** — Resolves all `<!-- @include -->` directives and writes a single unified CABIDL document to stdout.
 - **validate** — Validates document structure, YAML blocks, and boundary reference integrity. Silent on success; errors to stderr with non-zero exit on failure.
 - **diagram** — Parses the CABIDL document, generates an architecture diagram in the requested format (`-t/--type`, default `graphviz`), and writes the result to the specified output file (`-o/--output-file`).
+- **skill install** — Installs the embedded cabidl skill file to an AI tool provider's skill directory. Accepts an optional `--target-dir` (`-d`) to override the default installation path. The skill file content (`skill.md`) is embedded into the binary at compile time.
 
 ---
 
@@ -136,6 +141,25 @@ Implemented as the `cabidl-diagram` crate in `diagram/`. Contains only the trait
 
 ---
 
+## Boundary: AiProvider
+
+```yaml
+kind: boundary
+name: AiProvider
+exposure: internal
+specification:
+  path: ./ai_provider_trait.rs
+  typeDescription: Rust Traits
+```
+
+The AI tool provider contract. Abstracts operations for installing skill files into AI-powered development tools. Each implementer handles the provider-specific directory structure and conventions. The trait and the `AiProviderError` type are defined in `./ai_provider_trait.rs`.
+
+A provider identifies itself via a `provider_name()` method that returns a string (e.g. `"claude-code"`). The `install_skill()` method takes an optional target directory path and the skill content as a string. When the target directory is `None`, the implementation uses the provider's default location.
+
+Implemented as the `cabidl-ai-provider` crate in `ai-provider/`. Contains only the trait and error type — no implementations, no external dependencies.
+
+---
+
 ## Component: Cli
 
 ```yaml
@@ -148,11 +172,12 @@ boundaries:
   requires:
     - CabidlParser
     - Diagram
+    - AiProvider
 ```
 
-Entry point of the application. Parses command-line arguments, dispatches to the appropriate subcommand, and formats output or errors for the terminal. Contains no domain logic — delegates parsing and validation to the CabidlParser boundary and diagram generation to the Diagram boundary.
+Entry point of the application. Parses command-line arguments, dispatches to the appropriate subcommand, and formats output or errors for the terminal. Contains no domain logic — delegates parsing and validation to the CabidlParser boundary, diagram generation to the Diagram boundary, and skill installation to the AiProvider boundary. The skill file (`skill.md` at the workspace root) is embedded into the binary at compile time via `include_str!("../skill.md")` and passed to the AiProvider's `install_skill()` method when the `skill install` subcommand is invoked.
 
-Implemented as the `cabidl` binary crate in `cli/`. Depends on `cabidl-parser`, `cabidl-parser-impl`, `cabidl-filesystem-impl`, `cabidl-diagram`, `cabidl-diagram-impl`, and `clap`.
+Implemented as the `cabidl` binary crate in `cli/`. Depends on `cabidl-parser`, `cabidl-parser-impl`, `cabidl-filesystem-impl`, `cabidl-diagram`, `cabidl-diagram-impl`, `cabidl-ai-provider`, `cabidl-claude-code`, and `clap`.
 
 ---
 
@@ -242,6 +267,27 @@ Implements the DiagramProvider boundary for Graphviz DOT format. Takes a System 
 - **Anchor nodes** — Each cluster contains an invisible anchor node (`_anchor:BoundaryName`) used as the edge endpoint so that `lhead` can route arrows to the cluster border.
 
 Implemented as the `cabidl-graphviz` crate in `graphviz/`. Depends on `cabidl-diagram-provider` and `cabidl-parser`.
+
+---
+
+## Component: ClaudeCode
+
+```yaml
+kind: component
+name: ClaudeCode
+technology: Rust
+boundaries:
+  provides:
+    - AiProvider
+  requires:
+    - Filesystem
+```
+
+Implements the AiProvider boundary for Claude Code. Handles the Claude Code skill folder structure: skills are installed to `<target_dir>/cabidl/SKILL.md`. When no target directory is provided, defaults to `~/.claude/skills/`.
+
+The `provider_name()` returns `"claude-code"`. The `install_skill()` method creates the necessary directory structure and writes the skill content to the correct path.
+
+Implemented as the `cabidl-claude-code` crate in `claude-code/`. Depends on `cabidl-ai-provider` and `cabidl-filesystem`.
 
 ---
 

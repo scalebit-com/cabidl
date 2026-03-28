@@ -1,6 +1,6 @@
 ---
 name: cabidl
-description: "How to use the cabidl CLI and follow a spec-first architecture development workflow with CABIDL. Use this skill whenever the user mentions cabidl, architecture specifications, boundary definitions, component architecture, cabidl.md files, or wants to validate/read/diagram an architecture spec. Also trigger when the user is working in a project that contains a cabidl/ directory or cabidl.md file and is making architectural changes, adding components or boundaries, or wants to understand the system structure."
+description: "How to use the cabidl CLI and follow a spec-first architecture development workflow with CABIDL. Use this skill whenever the user mentions cabidl, architecture specifications, boundary definitions, component architecture, cabidl.md files, or wants to validate/read/diagram an architecture spec. Also trigger when the user is working in a project that contains a cabidl/ directory or cabidl.md file and is making architectural changes, adding components or boundaries, or wants to understand the system structure. Also trigger when the user wants to install or manage cabidl skills for AI tool providers."
 ---
 
 # CABIDL Development Workflow
@@ -17,7 +17,7 @@ If neither exists and the user wants to start using CABIDL, help them create one
 
 ## CLI Reference
 
-The `cabidl` tool has three subcommands:
+The `cabidl` tool has four subcommands:
 
 ### `cabidl read <file>`
 Resolves all `<!-- @include ./path.md -->` directives and outputs a single unified CABIDL document to stdout. This is the primary way to understand the full architecture — it assembles all included files into one view.
@@ -43,6 +43,16 @@ Generates an architecture diagram from the spec. Currently supports Graphviz DOT
 ```bash
 cabidl diagram cabidl/cabidl.md -o architecture.dot
 dot -Tpng architecture.dot -o architecture.png  # render with graphviz
+```
+
+### `cabidl skill install [-d <target-dir>]`
+Installs the cabidl SKILL.md to an AI tool provider's skill directory. The skill file is embedded in the binary at compile time.
+
+By default, installs to `~/.claude/skills/cabidl/SKILL.md` (Claude Code's global skill location). Use `-d`/`--target-dir` to override the base directory.
+
+```bash
+cabidl skill install                        # install to default location
+cabidl skill install -d ./my-project        # install to ./my-project/.claude/skills/cabidl/SKILL.md
 ```
 
 ### `cabidl --version`

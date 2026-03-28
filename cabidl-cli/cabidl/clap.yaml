@@ -44,3 +44,15 @@ subcommands:
             long: output-file
             help: Path to the output file
             required: true
+  - skill:
+      about: Manage cabidl skills for AI tool providers
+      subcommands:
+        - install:
+            about: Install the cabidl skill to an AI tool provider
+            args:
+              - target-dir:
+                  short: d
+                  long: target-dir
+                  help: Target directory for skill installation (defaults to provider's default location)
+                  takes_value: true
+                  required: false
