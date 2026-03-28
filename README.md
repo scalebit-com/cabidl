@@ -108,6 +108,27 @@ cabidl read cabidl.md        # Resolve includes, output unified document
 
 The tool validates YAML block structure, boundary reference integrity, name uniqueness, and reports errors with file and line number context. See [cabidl-cli/](cabidl-cli/) for the implementation.
 
+### Install
+
+**Homebrew (macOS / Linux):**
+
+```bash
+brew install scalebit-com/tools/cabidl
+```
+
+Or tap first, then install:
+
+```bash
+brew tap scalebit-com/tools
+brew install cabidl
+```
+
+**Verify:**
+
+```bash
+cabidl --version
+```
+
 ---
 
 # Learn More
