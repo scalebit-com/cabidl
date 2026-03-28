@@ -50,7 +50,13 @@ specification:
   typeDescription: CLAP YAML
 ```
 
-The command-line interface exposed to the user. Defined by `clap.yaml` and implemented directly inside the Cli component crate using clap's derive API. Three subcommands:
+The command-line interface exposed to the user. Defined by `clap.yaml` and implemented directly inside the Cli component crate using clap's derive API.
+
+Global options:
+
+- **--version** / **-V** — Prints version information. The short form (`-V`) prints the CLI version number. The long form (`--version`) prints the CLI version and the supported CABIDL specification version (e.g. `cabidl 0.1.1 (spec 1.1)`). The CLI version is embedded at compile time from `CARGO_PKG_VERSION`; the spec version is a compile-time constant matching `specification.md`.
+
+Three subcommands:
 
 - **read** — Resolves all `<!-- @include -->` directives and writes a single unified CABIDL document to stdout.
 - **validate** — Validates document structure, YAML blocks, and boundary reference integrity. Silent on success; errors to stderr with non-zero exit on failure.

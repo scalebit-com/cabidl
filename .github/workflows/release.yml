@@ -15,9 +15,9 @@ jobs:
 
       - name: Set version from version.txt
         run: |
-          VERSION=$(cat version.txt | tr -d '[:space:]')
+          VERSION=$(cat cabidl-cli/version.txt | tr -d '[:space:]')
           echo "Setting version to $VERSION"
-          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" {} +
+          perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" cabidl-cli/Cargo.toml
           cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
 
       - uses: dtolnay/rust-toolchain@stable
@@ -61,23 +61,19 @@ jobs:
       - name: Set version from version.txt (unix)
         if: runner.os != 'Windows'
         run: |
-          VERSION=$(cat version.txt | tr -d '[:space:]')
+          VERSION=$(cat cabidl-cli/version.txt | tr -d '[:space:]')
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          find cabidl-cli -name 'Cargo.toml' -not -path '*/target/*' -exec perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" {} +
+          perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" cabidl-cli/Cargo.toml
           cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
 
       - name: Set version from version.txt (windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $VERSION = (Get-Content version.txt).Trim()
+          $VERSION = (Get-Content cabidl-cli/version.txt).Trim()
           echo "VERSION=$VERSION" >> $env:GITHUB_ENV
-          Get-ChildItem -Path cabidl-cli -Recurse -Filter 'Cargo.toml' |
-            Where-Object { $_.FullName -notmatch 'target' } |
-            ForEach-Object {
-              (Get-Content $_.FullName) -replace '^version = ".*"', "version = `"$VERSION`"" |
-                Set-Content $_.FullName
-            }
+          (Get-Content cabidl-cli/Cargo.toml) -replace '^version = ".*"', "version = `"$VERSION`"" |
+            Set-Content cabidl-cli/Cargo.toml
           cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
 
       - uses: dtolnay/rust-toolchain@stable

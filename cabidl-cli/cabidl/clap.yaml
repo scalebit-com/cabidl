@@ -1,7 +1,11 @@
 name: cabidl
-version: "1.0.0"
 about: Parse and validate CABIDL architecture specification files
 args:
+  - version:
+      short: V
+      long: version
+      help: Print version information (-V for short version, --version includes spec version)
+      takes_value: false
   - file:
       help: Path to the CABIDL markdown file
       required: true

@@ -7,8 +7,10 @@ use cabidl_parser::CabidlParser;
 use cabidl_parser_impl::CabidlParserImpl;
 use cabidl_filesystem_impl::RealFilesystem;
 
+const LONG_VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), " (spec 1.1)");
+
 #[derive(Parser)]
-#[command(name = "cabidl", version = "1.0.0")]
+#[command(name = "cabidl", version, long_version = LONG_VERSION)]
 #[command(about = "Parse and validate CABIDL architecture specification files")]
 struct Cli {
     #[command(subcommand)]
