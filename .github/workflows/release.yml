@@ -25,6 +25,13 @@ jobs:
       - name: Run tests
         run: cargo test --manifest-path cabidl-cli/Cargo.toml
 
+      - name: Validate templates
+        run: |
+          for spec in cabidl-cli/templates/*/cabidl/cabidl.md; do
+            echo "Validating $spec"
+            cargo run --manifest-path cabidl-cli/Cargo.toml -- validate "$spec"
+          done
+
   build:
     name: Build ${{ matrix.name }}
     needs: test
