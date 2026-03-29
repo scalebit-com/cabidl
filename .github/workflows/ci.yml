@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - 'v*'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version from version.txt
+        run: |
+          VERSION=$(cat cabidl-cli/version.txt | tr -d '[:space:]')
+          echo "Setting version to $VERSION"
+          perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" cabidl-cli/Cargo.toml
+          cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Run tests
+        run: cargo test --manifest-path cabidl-cli/Cargo.toml
+
+      - name: Validate templates
+        run: |
+          for spec in cabidl-cli/templates/*/cabidl/cabidl.md; do
+            echo "Validating $spec"
+            cargo run --manifest-path cabidl-cli/Cargo.toml -- validate "$spec"
+          done
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    env:
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - name: linux-arm64
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
+          - name: macos-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+          - name: macos-x86_64
+            runner: macos-14
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - name: windows-x86_64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version from version.txt (unix)
+        if: runner.os != 'Windows'
+        run: |
+          VERSION=$(cat cabidl-cli/version.txt | tr -d '[:space:]')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          perl -pi -e "s/^version = \".*\"/version = \"$VERSION\"/" cabidl-cli/Cargo.toml
+          cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
+
+      - name: Set version from version.txt (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = (Get-Content cabidl-cli/version.txt).Trim()
+          echo "VERSION=$VERSION" >> $env:GITHUB_ENV
+          (Get-Content cabidl-cli/Cargo.toml) -replace '^version = ".*"', "version = `"$VERSION`"" |
+            Set-Content cabidl-cli/Cargo.toml
+          cargo update --manifest-path cabidl-cli/Cargo.toml --workspace
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build
+        run: cargo build --manifest-path cabidl-cli/Cargo.toml --release --target ${{ matrix.target }} --package cabidl
