@@ -46,6 +46,7 @@ cabidl-cli/
     ├── diagram-impl/                  #   Diagram component (cabidl-diagram-impl)
     ├── filesystem-impl/               #   FilesystemImpl component (cabidl-filesystem-impl)
     ├── graphviz/                      #   Graphviz component (cabidl-graphviz)
+    ├── mermaid/                       #   Mermaid component (cabidl-mermaid)
     ├── init-impl/                     #   InitImpl component (cabidl-init-impl)
     └── parser-impl/                   #   Parser component (cabidl-parser-impl)
 ```
@@ -101,6 +102,10 @@ cabidl-cli/
 ---
 
 <!-- @include ./components/graphviz.md -->
+
+---
+
+<!-- @include ./components/mermaid.md -->
 
 ---
 

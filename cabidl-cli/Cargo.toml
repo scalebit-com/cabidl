@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 
 [workspace]
 members = [
@@ -15,6 +15,7 @@ members = [
     "components/diagram-impl",
     "components/filesystem-impl",
     "components/graphviz",
+    "components/mermaid",
     "components/init-impl",
     "components/parser-impl",
     "components/wiring-impl",

@@ -12,12 +12,79 @@ fn sanitize_id(name: &str) -> String {
         .collect()
 }
 
+struct ColorScheme {
+    bg: &'static str,
+    fg: &'static str,
+    node_fg: &'static str,
+    node_fill: &'static str,
+    node_border: &'static str,
+    edge_label: &'static str,
+    external_border: &'static str,
+    external_label: &'static str,
+    external_style: &'static str,
+    internal_border: &'static str,
+    internal_label: &'static str,
+    internal_style: &'static str,
+    provides_color: &'static str,
+    requires_color: &'static str,
+}
+
+impl ColorScheme {
+    fn dark() -> Self {
+        Self {
+            bg: "#1e1e2e",
+            fg: "#cdd6f4",
+            node_fg: "#cdd6f4",
+            node_fill: "#313244",
+            node_border: "#585b70",
+            edge_label: "#a6adc8",
+            external_border: "#f38ba8",
+            external_label: "#f38ba8",
+            external_style: "rounded,bold",
+            internal_border: "#585b70",
+            internal_label: "#a6adc8",
+            internal_style: "rounded",
+            provides_color: "#a6e3a1",
+            requires_color: "#89b4fa",
+        }
+    }
+
+    fn light() -> Self {
+        Self {
+            bg: "#ffffff",
+            fg: "#1e1e2e",
+            node_fg: "#1e1e2e",
+            node_fill: "#e6e9ef",
+            node_border: "#9ca0b0",
+            edge_label: "#6c6f85",
+            external_border: "#d20f39",
+            external_label: "#d20f39",
+            external_style: "rounded,bold",
+            internal_border: "#9ca0b0",
+            internal_label: "#6c6f85",
+            internal_style: "rounded",
+            provides_color: "#40a02b",
+            requires_color: "#1e66f5",
+        }
+    }
+}
+
 impl DiagramProvider for GraphvizProvider {
     fn diagram_type(&self) -> &str {
         "graphviz"
     }
 
-    fn generate(&self, system: &System) -> Result<String, DiagramError> {
+    fn generate(&self, system: &System, diagram_sub_type: Option<&str>) -> Result<String, DiagramError> {
+        let scheme = match diagram_sub_type {
+            None | Some("dark") => ColorScheme::dark(),
+            Some("light") => ColorScheme::light(),
+            Some(other) => {
+                return Err(DiagramError {
+                    message: format!("Unknown graphviz diagram sub-type: '{}'. Valid values: dark, light", other),
+                });
+            }
+        };
+
         let mut dot = String::new();
 
         // --- Preparation: build assignment maps ---
@@ -51,8 +118,8 @@ impl DiagramProvider for GraphvizProvider {
         // --- DOT header ---
 
         writeln!(dot, "digraph \"{}\" {{", system.name).unwrap();
-        writeln!(dot, "    bgcolor=\"#1e1e2e\"").unwrap();
-        writeln!(dot, "    fontcolor=\"#cdd6f4\"").unwrap();
+        writeln!(dot, "    bgcolor=\"{}\"", scheme.bg).unwrap();
+        writeln!(dot, "    fontcolor=\"{}\"", scheme.fg).unwrap();
         writeln!(dot, "    fontname=\"Helvetica\"").unwrap();
         writeln!(dot, "    label=\"{}\"", system.name).unwrap();
         writeln!(dot, "    labelloc=t").unwrap();
@@ -65,12 +132,14 @@ impl DiagramProvider for GraphvizProvider {
 
         writeln!(
             dot,
-            "    node [fontname=\"Helvetica\" fontsize=12 fontcolor=\"#cdd6f4\"]"
+            "    node [fontname=\"Helvetica\" fontsize=12 fontcolor=\"{}\"]",
+            scheme.node_fg
         )
         .unwrap();
         writeln!(
             dot,
-            "    edge [fontname=\"Helvetica\" fontsize=10 fontcolor=\"#a6adc8\"]"
+            "    edge [fontname=\"Helvetica\" fontsize=10 fontcolor=\"{}\"]",
+            scheme.edge_label
         )
         .unwrap();
         writeln!(dot).unwrap();
@@ -88,9 +157,9 @@ impl DiagramProvider for GraphvizProvider {
                 .is_some_and(|e| e == "external");
 
             let (border_color, font_color, style) = if is_external {
-                ("#f38ba8", "#f38ba8", "rounded,bold")
+                (scheme.external_border, scheme.external_label, scheme.external_style)
             } else {
-                ("#585b70", "#a6adc8", "rounded")
+                (scheme.internal_border, scheme.internal_label, scheme.internal_style)
             };
 
             let cluster_id = sanitize_id(&boundary.name);
@@ -123,8 +192,8 @@ impl DiagramProvider for GraphvizProvider {
                     };
                     writeln!(
                         dot,
-                        "        \"component:{}\" [shape=box style=\"filled,rounded\" fillcolor=\"#313244\" fontcolor=\"#cdd6f4\" color=\"#585b70\" label=\"{}\"]",
-                        component.name, label
+                        "        \"component:{}\" [shape=box style=\"filled,rounded\" fillcolor=\"{}\" fontcolor=\"{}\" color=\"{}\" label=\"{}\"]",
+                        component.name, scheme.node_fill, scheme.node_fg, scheme.node_border, label
                     )
                     .unwrap();
                 }
@@ -144,8 +213,8 @@ impl DiagramProvider for GraphvizProvider {
                 };
                 writeln!(
                     dot,
-                    "    \"component:{}\" [shape=box style=\"filled,rounded\" fillcolor=\"#313244\" fontcolor=\"#cdd6f4\" color=\"#585b70\" label=\"{}\"]",
-                    component.name, label
+                    "    \"component:{}\" [shape=box style=\"filled,rounded\" fillcolor=\"{}\" fontcolor=\"{}\" color=\"{}\" label=\"{}\"]",
+                    component.name, scheme.node_fill, scheme.node_fg, scheme.node_border, label
                 )
                 .unwrap();
             }
@@ -159,8 +228,8 @@ impl DiagramProvider for GraphvizProvider {
                 let cluster_id = sanitize_id(&boundary.name);
                 writeln!(
                     dot,
-                    "    \"component:{}\" -> \"_anchor:{}\" [color=\"#a6e3a1\" label=\"provides\" lhead=\"cluster_{}\"]",
-                    component.name, boundary.name, cluster_id
+                    "    \"component:{}\" -> \"_anchor:{}\" [color=\"{}\" label=\"provides\" lhead=\"cluster_{}\"]",
+                    component.name, boundary.name, scheme.provides_color, cluster_id
                 )
                 .unwrap();
             }
@@ -170,8 +239,8 @@ impl DiagramProvider for GraphvizProvider {
                 let cluster_id = sanitize_id(&boundary.name);
                 writeln!(
                     dot,
-                    "    \"component:{}\" -> \"_anchor:{}\" [color=\"#89b4fa\" lhead=\"cluster_{}\"]",
-                    component.name, boundary.name, cluster_id
+                    "    \"component:{}\" -> \"_anchor:{}\" [color=\"{}\" lhead=\"cluster_{}\"]",
+                    component.name, boundary.name, scheme.requires_color, cluster_id
                 )
                 .unwrap();
             }
@@ -204,10 +273,52 @@ mod tests {
             line: None,
         };
         let provider = GraphvizProvider;
-        let result = provider.generate(&system).unwrap();
+        let result = provider.generate(&system, None).unwrap();
         assert!(result.contains("digraph \"test\""));
         assert!(result.contains("bgcolor=\"#1e1e2e\""));
         assert!(result.contains("compound=true"));
+    }
+
+    #[test]
+    fn generate_dark_is_default() {
+        let system = System {
+            name: "test".to_string(),
+            boundaries: vec![],
+            components: vec![],
+            line: None,
+        };
+        let provider = GraphvizProvider;
+        let default = provider.generate(&system, None).unwrap();
+        let explicit_dark = provider.generate(&system, Some("dark")).unwrap();
+        assert_eq!(default, explicit_dark);
+    }
+
+    #[test]
+    fn generate_light_scheme() {
+        let system = System {
+            name: "test".to_string(),
+            boundaries: vec![],
+            components: vec![],
+            line: None,
+        };
+        let provider = GraphvizProvider;
+        let result = provider.generate(&system, Some("light")).unwrap();
+        assert!(result.contains("bgcolor=\"#ffffff\""));
+        assert!(result.contains("fontcolor=\"#1e1e2e\""));
+    }
+
+    #[test]
+    fn generate_unknown_sub_type_returns_error() {
+        let system = System {
+            name: "test".to_string(),
+            boundaries: vec![],
+            components: vec![],
+            line: None,
+        };
+        let provider = GraphvizProvider;
+        let result = provider.generate(&system, Some("neon"));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message.contains("Unknown graphviz diagram sub-type"));
     }
 
     #[test]
@@ -234,7 +345,7 @@ mod tests {
         };
 
         let provider = GraphvizProvider;
-        let result = provider.generate(&system).unwrap();
+        let result = provider.generate(&system, None).unwrap();
 
         // Component should be inside the Api cluster
         assert!(result.contains("subgraph cluster_Api"));
@@ -269,7 +380,7 @@ mod tests {
         };
 
         let provider = GraphvizProvider;
-        let result = provider.generate(&system).unwrap();
+        let result = provider.generate(&system, None).unwrap();
 
         // External boundaries should have red border and bold style
         assert!(result.contains("subgraph cluster_PublicApi"));
@@ -301,7 +412,7 @@ mod tests {
         };
 
         let provider = GraphvizProvider;
-        let result = provider.generate(&system).unwrap();
+        let result = provider.generate(&system, None).unwrap();
 
         assert!(result.contains("\"component:App\" -> \"_anchor:Database\""));
         assert!(result.contains("lhead=\"cluster_Database\""));
@@ -333,7 +444,7 @@ mod tests {
         };
 
         let provider = GraphvizProvider;
-        let result = provider.generate(&system).unwrap();
+        let result = provider.generate(&system, None).unwrap();
 
         // Cluster for the boundary and component node inside it — no collision
         assert!(result.contains("subgraph cluster_Diagram"));
@@ -371,7 +482,7 @@ mod tests {
         };
 
         let provider = GraphvizProvider;
-        let result = provider.generate(&system).unwrap();
+        let result = provider.generate(&system, None).unwrap();
 
         // Component should be inside the first cluster (Auth)
         assert!(result.contains("subgraph cluster_Auth"));
@@ -413,7 +524,7 @@ mod tests {
         };
 
         let provider = GraphvizProvider;
-        let result = provider.generate(&system).unwrap();
+        let result = provider.generate(&system, None).unwrap();
 
         // DiskStore should be inside the Storage cluster
         assert!(result.contains("subgraph cluster_Storage"));

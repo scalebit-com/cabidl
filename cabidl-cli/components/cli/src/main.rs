@@ -34,8 +34,11 @@ enum Commands {
         /// Path to the CABIDL markdown file
         file: PathBuf,
         /// Diagram output format
-        #[arg(short = 't', long = "type", default_value = "graphviz")]
-        diagram_type: String,
+        #[arg(short = 'f', long = "format", default_value = "graphviz")]
+        format: String,
+        /// Diagram sub-type within the chosen format (graphviz: dark/light, mermaid: c4/class)
+        #[arg(short = 't', long = "diagram-type")]
+        diagram_type: Option<String>,
         /// Path to the output file
         #[arg(short = 'o', long = "output-file")]
         output_file: PathBuf,
@@ -107,7 +110,7 @@ fn main() {
                 }
             }
         }
-        Commands::Diagram { file, diagram_type, output_file } => {
+        Commands::Diagram { file, format, diagram_type, output_file } => {
             let parser = wiring.parser();
             match parser.parse(&file) {
                 Ok(system) => {
@@ -119,7 +122,7 @@ fn main() {
                         process::exit(1);
                     }
 
-                    match wiring.diagram().generate(&system, &diagram_type) {
+                    match wiring.diagram().generate(&system, &format, diagram_type.as_deref()) {
                         Ok(content) => {
                             if let Err(e) = RealFilesystem.write_string(&output_file, &content) {
                                 eprintln!("error: Failed to write '{}': {}", output_file.display(), e);

@@ -31,7 +31,7 @@ fn test_system() -> System {
 #[test]
 fn generate_with_known_type_returns_content() {
     let diagram = DiagramImpl::new(vec![Box::new(GraphvizProvider)]);
-    let result = diagram.generate(&test_system(), "graphviz");
+    let result = diagram.generate(&test_system(), "graphviz", None);
     assert!(result.is_ok());
     let content = result.unwrap();
     assert!(content.contains("digraph"));
@@ -40,9 +40,9 @@ fn generate_with_known_type_returns_content() {
 #[test]
 fn generate_with_unknown_type_returns_error() {
     let diagram = DiagramImpl::new(vec![Box::new(GraphvizProvider)]);
-    let result = diagram.generate(&test_system(), "mermaid");
+    let result = diagram.generate(&test_system(), "svg", None);
     assert!(result.is_err());
 
     let err = result.unwrap_err();
-    assert!(err.message.contains("Unknown diagram type: 'mermaid'"));
+    assert!(err.message.contains("Unknown diagram type: 'svg'"));
 }

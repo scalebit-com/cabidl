@@ -17,6 +17,7 @@ impl Diagram for DiagramImpl {
         &self,
         system: &System,
         diagram_type: &str,
+        diagram_sub_type: Option<&str>,
     ) -> Result<String, DiagramError> {
         let provider = self
             .providers
@@ -26,6 +27,6 @@ impl Diagram for DiagramImpl {
                 message: format!("Unknown diagram type: '{}'", diagram_type),
             })?;
 
-        provider.generate(system)
+        provider.generate(system, diagram_sub_type)
     }
 }

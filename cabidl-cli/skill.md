@@ -17,7 +17,7 @@ If neither exists and the user wants to start using CABIDL, help them create one
 
 ## CLI Reference
 
-The `cabidl` tool has four subcommands:
+The `cabidl` tool has five subcommands:
 
 ### `cabidl read <file>`
 Resolves all `<!-- @include ./path.md -->` directives and outputs a single unified CABIDL document to stdout. This is the primary way to understand the full architecture — it assembles all included files into one view.
@@ -37,12 +37,27 @@ Run `validate` after every spec change to catch structural errors early.
 cabidl validate cabidl/cabidl.md
 ```
 
-### `cabidl diagram <file> -o <output-file>`
-Generates an architecture diagram from the spec. Currently supports Graphviz DOT format.
+### `cabidl diagram <file> -o <output-file> [-f <format>] [-t <diagram-type>]`
+Generates an architecture diagram from the spec. Supports Graphviz DOT and Mermaid formats.
+
+- `-f/--format`: Output format — `graphviz` (default) or `mermaid`
+- `-t/--diagram-type`: Sub-type within the format:
+  - Graphviz: `dark` (default) or `light`
+  - Mermaid: `c4` (default) or `class`
 
 ```bash
+# Graphviz (default format, dark theme)
 cabidl diagram cabidl/cabidl.md -o architecture.dot
-dot -Tpng architecture.dot -o architecture.png  # render with graphviz
+dot -Tpng architecture.dot -o architecture.png
+
+# Graphviz with light theme
+cabidl diagram cabidl/cabidl.md -f graphviz -t light -o architecture.dot
+
+# Mermaid C4 diagram (default mermaid sub-type)
+cabidl diagram cabidl/cabidl.md -f mermaid -o architecture.mmd
+
+# Mermaid class diagram
+cabidl diagram cabidl/cabidl.md -f mermaid -t class -o architecture.mmd
 ```
 
 ### `cabidl skill install [-d <target-dir>]`

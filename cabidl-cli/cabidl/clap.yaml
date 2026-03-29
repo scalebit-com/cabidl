@@ -28,13 +28,25 @@ subcommands:
             help: Path to the CABIDL markdown file
             required: true
             index: 1
-        - type:
-            short: t
-            long: type
+        - format:
+            short: f
+            long: format
             help: Diagram output format
             default_value: graphviz
             possible_values:
               - graphviz
+              - mermaid
+        - diagram-type:
+            short: t
+            long: diagram-type
+            help: Diagram sub-type within the chosen format (graphviz: dark/light, mermaid: c4/class)
+            takes_value: true
+            required: false
+            possible_values:
+              - dark
+              - light
+              - c4
+              - class
         - output-file:
             short: o
             long: output-file

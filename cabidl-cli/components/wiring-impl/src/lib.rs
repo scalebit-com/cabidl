@@ -18,7 +18,10 @@ impl WiringImpl {
         Self {
             parser: cabidl_parser_impl::CabidlParserImpl::new(fs()),
             diagram: cabidl_diagram_impl::DiagramImpl::new(
-                vec![Box::new(cabidl_graphviz::GraphvizProvider)],
+                vec![
+                    Box::new(cabidl_graphviz::GraphvizProvider),
+                    Box::new(cabidl_mermaid::MermaidProvider),
+                ],
             ),
             ai_provider: cabidl_claude_code::ClaudeCodeProvider::new(fs()),
             init: cabidl_init_impl::InitImpl::new(fs()),

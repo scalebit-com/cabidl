@@ -13,6 +13,7 @@ cabidl-diagram = { path = "../../boundaries/diagram" }
 cabidl-diagram-impl = { path = "../diagram-impl" }
 cabidl-diagram-provider = { path = "../../boundaries/diagram-provider" }
 cabidl-graphviz = { path = "../graphviz" }
+cabidl-mermaid = { path = "../mermaid" }
 cabidl-ai-provider = { path = "../../boundaries/ai-provider" }
 cabidl-claude-code = { path = "../claude-code" }
 cabidl-init = { path = "../../boundaries/init" }
