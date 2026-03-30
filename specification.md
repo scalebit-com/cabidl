@@ -51,7 +51,7 @@ Boundary names must be unique within a document. Two boundary blocks with the sa
 | `kind`                       | string | yes      | Must be `"boundary"`                                          |
 | `name`                       | string | yes      | The name of the boundary                                      |
 | `exposure`                   | string | no       | `"external"` (user/world-facing) or `"internal"` (component-to-component) |
-| `specification.path`         | string | no       | Relative path to the file or directory containing the spec    |
+| `specification.path`         | string | no       | Path to the file or directory containing the spec, relative to the root CABIDL document |
 | `specification.typeDescription` | string | no    | Description of the specification type (e.g. "OpenAPI Schema") |
 
 Schema: `cabidl-boundary.schema.json`

@@ -1014,3 +1014,93 @@ fn test_error_display_format_without_line() {
     };
     assert_eq!(format!("{}", err), "arch.md: document-level error");
 }
+
+// ---------------------------------------------------------------------------
+// Specification path existence tests (uses InMemoryFilesystem + CabidlParserImpl)
+// ---------------------------------------------------------------------------
+
+use cabidl_parser::CabidlParser;
+use cabidl_parser_impl::CabidlParserImpl;
+
+fn make_parser(fs: InMemoryFilesystem) -> CabidlParserImpl {
+    CabidlParserImpl::new(Box::new(fs))
+}
+
+#[test]
+fn test_specification_path_exists_passes() {
+    let mut fs = InMemoryFilesystem::new();
+    fs.add_file("/project/main.md", "\
+```yaml
+kind: system
+name: test
+```
+
+---
+
+```yaml
+kind: boundary
+name: Api
+specification:
+  path: ./api_spec.rs
+  typeDescription: Rust Traits
+```
+");
+    fs.add_file("/project/api_spec.rs", "pub trait Api {}");
+
+    let parser = make_parser(fs);
+    let system = parser.parse(Path::new("/project/main.md")).unwrap();
+    let errors = parser.validate(&system, "/project/main.md");
+    assert!(errors.is_empty(), "expected no errors, got: {:?}", errors);
+}
+
+#[test]
+fn test_specification_path_missing_reports_error() {
+    let mut fs = InMemoryFilesystem::new();
+    fs.add_file("/project/main.md", "\
+```yaml
+kind: system
+name: test
+```
+
+---
+
+```yaml
+kind: boundary
+name: Api
+specification:
+  path: ./missing_file.rs
+  typeDescription: Rust Traits
+```
+");
+
+    let parser = make_parser(fs);
+    let system = parser.parse(Path::new("/project/main.md")).unwrap();
+    let errors = parser.validate(&system, "/project/main.md");
+    assert_eq!(errors.len(), 1);
+    assert!(errors[0].message.contains("does not exist"));
+    assert!(errors[0].message.contains("missing_file.rs"));
+    assert!(errors[0].message.contains("boundary 'Api'"));
+}
+
+#[test]
+fn test_boundary_without_specification_path_passes() {
+    let mut fs = InMemoryFilesystem::new();
+    fs.add_file("/project/main.md", "\
+```yaml
+kind: system
+name: test
+```
+
+---
+
+```yaml
+kind: boundary
+name: Api
+```
+");
+
+    let parser = make_parser(fs);
+    let system = parser.parse(Path::new("/project/main.md")).unwrap();
+    let errors = parser.validate(&system, "/project/main.md");
+    assert!(errors.is_empty(), "expected no errors, got: {:?}", errors);
+}

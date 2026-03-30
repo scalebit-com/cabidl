@@ -27,6 +27,38 @@ impl CabidlParser for CabidlParserImpl {
     }
 
     fn validate(&self, system: &System, file: &str) -> Vec<ValidationError> {
-        crate::validator::validate(system, file)
+        let mut errors = crate::validator::validate(system, file);
+
+        let base = std::path::Path::new(file);
+        for boundary in &system.boundaries {
+            if let Some(ref spec_path) = boundary.specification_path {
+                match self.fs.resolve_path(base, std::path::Path::new(spec_path)) {
+                    Ok(path) => {
+                        if !self.fs.exists(&path) {
+                            errors.push(ValidationError {
+                                message: format!(
+                                    "Specification path '{}' in boundary '{}' does not exist",
+                                    spec_path, boundary.name
+                                ),
+                                file: file.to_string(),
+                                line: boundary.line,
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        errors.push(ValidationError {
+                            message: format!(
+                                "Cannot resolve specification path '{}' in boundary '{}': {}",
+                                spec_path, boundary.name, e
+                            ),
+                            file: file.to_string(),
+                            line: boundary.line,
+                        });
+                    }
+                }
+            }
+        }
+
+        errors
     }
 }

@@ -28,7 +28,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "description": "Relative path to the file or directory containing the specification."
+          "description": "Path to the file or directory containing the specification, relative to the root CABIDL document."
         },
         "typeDescription": {
           "type": "string",
